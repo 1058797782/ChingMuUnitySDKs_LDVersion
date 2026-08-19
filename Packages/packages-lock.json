@@ -1,5 +1,15 @@
 {
   "dependencies": {
+    "com.lastdream.chingmu": {
+      "version": "file:com.lastdream.chingmu",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.modules.jsonserialize": "1.0.0",
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.modules.xr": "1.0.0"
+      }
+    },
     "com.unity.burst": {
       "version": "1.8.19",
       "depth": 1,
