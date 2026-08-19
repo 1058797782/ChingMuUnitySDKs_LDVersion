@@ -1,80 +1,159 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using System;
 using ChingMU;
-using System.IO;
+using UnityEngine;
 
+[DefaultExecutionOrder(-10000)]
 public class CMPluginThreadManager : MonoBehaviour
 {
     public CMPluginAPI.CMPluginType cMPluginType;
     public string ServerIP;
     public int port;
-
-    [HideInInspector]
-    public static CMPluginCommonInterface CMPlugin;
-
-    [HideInInspector]
-    public static bool IsConnected;
-
     public bool isUsingConfig;
 
-    [System.Serializable]
+    public static CMPluginThreadManager Active { get; private set; }
+    [HideInInspector] public static CMPluginCommonInterface CMPlugin;
+    [HideInInspector] public static bool IsConnected;
+
+    public CMPluginCommonInterface Plugin { get; private set; }
+    public bool Connected { get; private set; }
+
+    [Serializable]
     public class JsonData
     {
         public string serverIP;
     }
 
+    private bool ownsNativeThread;
+
     private void Awake()
     {
-        if (cMPluginType == CMPluginAPI.CMPluginType.LiveStream)
+        if (Active != null && Active != this)
         {
-            CMPlugin = new LiveStreamImpl();
-            CMPlugin.ServerIp = ServerIP;
-            CMPlugin.Port = port;
-            CMPlugin.cMserverType = CMPluginAPI.CMServerType.MCAvatar;
-            CMPlugin.StartCmThread();
+            Debug.LogWarning("Only one ChingMu thread manager can be active. The duplicate component was disabled.", this);
+            enabled = false;
+            return;
         }
-        else if (cMPluginType == CMPluginAPI.CMPluginType.Vrpn)
+
+        Active = this;
+        ApplyConfiguration();
+        Plugin = CreatePlugin();
+        CMPlugin = Plugin;
+
+        if (Plugin == null)
         {
-            CMPlugin = new VrpnImpl();
-            CMVrpn.CMUnityEnableTrackLog(false);
-            CMPlugin.ServerIp = ServerIP;
-            CMPlugin.Port = port;
-            CMPlugin.StartCmThread();
+            return;
         }
-        else
+
+        Plugin.ServerIp = ServerIP;
+        Plugin.Port = port;
+        Plugin.cMserverType = ChingMuAddress.ServerType(ServerIP);
+
+        try
         {
+            if (cMPluginType == CMPluginAPI.CMPluginType.Vrpn)
+            {
+                CMVrpn.CMUnityEnableTrackLog(false);
+            }
+
+            Plugin.StartCmThread();
+            ownsNativeThread = true;
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError("ChingMu native thread could not start: " + exception.Message, this);
+            Plugin = null;
             CMPlugin = null;
         }
     }
-    void Start()
-    {
-        IsConnected = CMPlugin.ConnectCmServer();
 
-        if(isUsingConfig)
+    private void Start()
+    {
+        if (Plugin == null || !ownsNativeThread)
         {
-            string filePath = Path.Combine(Application.streamingAssetsPath, "Config.json");
-            if (File.Exists(filePath))
+            return;
+        }
+
+        try
+        {
+            Connected = Plugin.ConnectCmServer();
+            IsConnected = Connected;
+            if (!Connected)
             {
-                string jsonContent = File.ReadAllText(filePath);
-                JsonData data = JsonUtility.FromJson<JsonData>(jsonContent);
-                
-                ServerIP = data.serverIP;
-                Debug.Log("ServerIP: " + data.serverIP);
+                Debug.LogWarning("ChingMu server connection was not established.", this);
             }
-            else
-            {
-                Debug.LogError("JSON文件未找到！");
-            }
+        }
+        catch (Exception exception)
+        {
+            Connected = false;
+            IsConnected = false;
+            Debug.LogError("ChingMu server connection failed: " + exception.Message, this);
         }
     }
 
-    void Update()
-    {
-        
-    }
     private void OnDestroy()
     {
-        CMPlugin.QuitCmThread();
+        if (Active != this)
+        {
+            return;
+        }
+
+        if (ownsNativeThread && Plugin != null)
+        {
+            try
+            {
+                Plugin.QuitCmThread();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError("ChingMu native thread could not stop cleanly: " + exception.Message, this);
+            }
+        }
+
+        ownsNativeThread = false;
+        Connected = false;
+        Plugin = null;
+        Active = null;
+        CMPlugin = null;
+        IsConnected = false;
+    }
+
+    private CMPluginCommonInterface CreatePlugin()
+    {
+        return cMPluginType == CMPluginAPI.CMPluginType.LiveStream
+            ? (CMPluginCommonInterface)new LiveStreamImpl()
+            : new VrpnImpl();
+    }
+
+    private void ApplyConfiguration()
+    {
+        if (!isUsingConfig)
+        {
+            return;
+        }
+
+        string configuredAddress;
+        if (Config.TryReadServerAddress(out configuredAddress))
+        {
+            string currentAddress = ServerIP;
+            if (string.IsNullOrWhiteSpace(currentAddress) &&
+                cMPluginType == CMPluginAPI.CMPluginType.Vrpn)
+            {
+                currentAddress = "MCServer@";
+            }
+
+            ServerIP = ChingMuAddress.ApplyConfiguredHost(currentAddress, configuredAddress);
+        }
+        else
+        {
+            Debug.LogWarning("ChingMu Config.json was not found or did not contain a server address.", this);
+        }
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        Active = null;
+        CMPlugin = null;
+        IsConnected = false;
     }
 }

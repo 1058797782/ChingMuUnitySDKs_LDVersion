@@ -1,45 +1,54 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+using System;
 using UnityEngine;
 
 public class LabelMarkerTest : MonoBehaviour
 {
-    Vector3 wPos = new Vector3();
-    Quaternion wQuat = new Quaternion();
-
-    CMPluginCommonInterface CMPlugin;
-
-    int[] bodyIds = Enumerable.Range(6000, 501).ToArray();
-
     public string Port = "3883";
-    string _address;
+    public bool scanEnabled;
+    public int firstBodyId = 6000;
+    public int lastBodyId = 6500;
+    public int bodiesPerFixedUpdate = 10;
+    public bool logDetectedBodies = true;
+
+    private CMPluginCommonInterface plugin;
+    private int currentBodyId;
 
     private void Start()
     {
-        if (CMPluginThreadManager.CMPlugin != null)
-        {
-            CMPlugin = CMPluginThreadManager.CMPlugin;
-            _address = CMPlugin.ServerIp + ":" + Port;
-        }
+        plugin = CMPluginThreadManager.CMPlugin;
+        currentBodyId = Math.Min(firstBodyId, lastBodyId);
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
-        bool IsInit = CMPlugin == null ? false : true;
-        if (IsInit)
+        if (!scanEnabled || plugin == null)
         {
-            foreach (int bodyId in bodyIds)
+            return;
+        }
+
+        int lower = Math.Min(firstBodyId, lastBodyId);
+        int upper = Math.Max(firstBodyId, lastBodyId);
+        int count = Math.Max(1, bodiesPerFixedUpdate);
+        for (int index = 0; index < count; index++)
+        {
+            Vector3 position;
+            Quaternion rotation;
+            plugin.GetTrackerPose(currentBodyId, out position, out rotation);
+            if (position != Vector3.zero)
             {
-                CMPluginThreadManager.CMPlugin.GetTrackerPose(bodyId, out wPos, out wQuat);
-                transform.localPosition = CMVrpn.CMPos(_address, bodyId);
-
-                Debug.Log($"Body ID: {bodyId}, Position: {transform.localPosition}");
-
-                if (transform.localPosition != Vector3.zero)
+                transform.SetPositionAndRotation(position, rotation);
+                if (logDetectedBodies)
                 {
-                    Debug.Log($"Body ID: {bodyId}, Position: {transform.localPosition}");
+                    Debug.Log("Body " + currentBodyId + " Position " + position, this);
                 }
+            }
+
+            currentBodyId++;
+            if (currentBodyId > upper)
+            {
+                currentBodyId = lower;
+                scanEnabled = false;
+                break;
             }
         }
     }

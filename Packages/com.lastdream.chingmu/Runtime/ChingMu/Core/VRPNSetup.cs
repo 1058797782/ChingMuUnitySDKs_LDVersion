@@ -1,5 +1,5 @@
-using ChingMU;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,82 +20,105 @@ public class VRPNSetup : MonoBehaviour
     public delegate void LogHandler(string message);
     public static event LogHandler OnLog;
 
-    private Dictionary<int, TransformData> trackerTransforms = new Dictionary<int, TransformData>();
-
-    CMPluginCommonInterface CMPlugin;    
-
     public string Port = "3883";
+    public int maximumBodyId = 99;
+    public int bodiesPerFrame = 10;
+    public bool logContinuously;
+    public float logInterval = 0.25f;
 
-    string _address;
-
-    int index = 0;
-
-    Vector3 pos;
-    Quaternion quat;
-    bool isLoopExecuted = false;
+    private readonly Dictionary<int, TransformData> trackerTransforms = new Dictionary<int, TransformData>();
+    private readonly List<int> detectedBodyIds = new List<int>();
+    private CMPluginCommonInterface plugin;
+    private Coroutine scanRoutine;
+    private float nextLogTime;
+    private string address;
 
     private void Start()
     {
-        if (VRPNSetupManager.CMPlugin != null)
+        plugin = VRPNSetupManager.CMPlugin ?? CMPluginThreadManager.CMPlugin;
+        if (plugin != null)
         {
-            CMPlugin = VRPNSetupManager.CMPlugin;
-            _address = CMPlugin.ServerIp + ":" + Port;           
+            int configuredPort;
+            int.TryParse(Port, out configuredPort);
+            address = ChingMuAddress.Build(plugin.ServerIp, configuredPort);
+            scanRoutine = StartCoroutine(ScanBodies());
         }
     }
 
-    void FixedUpdate()
+    private IEnumerator ScanBodies()
     {
-        if (isLoopExecuted == false)
+        trackerTransforms.Clear();
+        detectedBodyIds.Clear();
+        int batchSize = Math.Max(1, bodiesPerFrame);
+        int processed = 0;
+
+        for (int bodyId = 0; bodyId <= Math.Max(0, maximumBodyId); bodyId++)
         {
-            for (int i = 0; i < 100; i++)
+            Vector3 position;
+            Quaternion rotation;
+            plugin.GetTrackerPose(bodyId, out position, out rotation);
+            bool detected = plugin.cMpluginType == ChingMU.CMPluginAPI.CMPluginType.Vrpn
+                ? CMVrpn.CMTrackerIsDetected(address, bodyId)
+                : position != Vector3.zero || rotation != Quaternion.identity;
+            if (detected)
             {
-                Vector3 pos;
-                Quaternion quat;
-
-                CMPlugin.GetTrackerPose(i, out pos, out quat);
-                TransformData data = new TransformData(pos, quat);
-
-                if (pos != new Vector3(0, 0, 0) && quat != new Quaternion(0, 0, 0, 0))
-                {
-                    trackerTransforms.Add(i, data);
-                }
+                trackerTransforms.Add(bodyId, new TransformData(position, rotation));
+                detectedBodyIds.Add(bodyId);
             }
 
-            isLoopExecuted = true;
+            processed++;
+            if (processed >= batchSize)
+            {
+                processed = 0;
+                yield return null;
+            }
         }
 
-        if (isLoopExecuted)
-        {
-            bool IsInit = CMPlugin == null ? false : true;
+        scanRoutine = null;
+    }
 
-            if (IsInit)
-            {
-                for (int i = 0; i < trackerTransforms.Count; i++)
-                {
-                    CMPlugin.GetTrackerPose(GetKey(i), out pos, out quat);
-                    string logMessage = $"BodyCount = [{trackerTransforms.Count}]  |  BodySensor = [{GetKey(i)}]  |  Info : [Position :{pos}]  |  [Rotation :{quat}]";
-                    OnLog?.Invoke(logMessage);
-                    Debug.Log("BodyCount = [" + trackerTransforms.Count + "]  |  " + " BodySensor = [" + GetKey(i) + "]  |  Info :" + " [Position :" + pos + "]  |  " + "[Rotation :" + quat + "]");
-                }
-            }
+    private void FixedUpdate()
+    {
+        if (!logContinuously || plugin == null || Time.unscaledTime < nextLogTime)
+        {
+            return;
+        }
+
+        nextLogTime = Time.unscaledTime + Math.Max(0.02f, logInterval);
+        for (int index = 0; index < detectedBodyIds.Count; index++)
+        {
+            int bodyId = detectedBodyIds[index];
+            Vector3 position;
+            Quaternion rotation;
+            plugin.GetTrackerPose(bodyId, out position, out rotation);
+            TransformData data = trackerTransforms[bodyId];
+            data.Position = position;
+            data.Rotation = rotation;
+
+            string message = "BodyCount = [" + detectedBodyIds.Count + "] | BodySensor = [" + bodyId +
+                             "] | Position = [" + position + "] | Rotation = [" + rotation + "]";
+            OnLog?.Invoke(message);
+            Debug.Log(message, this);
         }
     }
-    int GetKey(int Num)
+
+    public void Rescan()
     {
-        if (Num < 0 || Num >= trackerTransforms.Count)
+        if (plugin == null)
         {
-            return default;
+            return;
         }
 
-        int currentIndex = 0;
-        foreach (int key in trackerTransforms.Keys)
+        if (scanRoutine != null)
         {
-            if (currentIndex == Num)
-            {
-                return key;
-            }
-            currentIndex++;
+            StopCoroutine(scanRoutine);
         }
-        return default;
+        scanRoutine = StartCoroutine(ScanBodies());
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        OnLog = null;
     }
 }

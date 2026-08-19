@@ -1,16 +1,12 @@
-﻿using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 public class BodyTracker : MonoBehaviour
 {
-    Vector3 wPos = new Vector3();
-    Quaternion wQuat = new Quaternion();
-
-    CMPluginCommonInterface CMPlugin;     
+    private Vector3 worldPosition;
+    private Quaternion worldRotation = Quaternion.identity;
+    private CMPluginCommonInterface plugin;
+    private string trackerName;
 
     [Header("刚体ID")]
     public int bodyId;
@@ -24,13 +20,8 @@ public class BodyTracker : MonoBehaviour
     [Header("端口")]
     public string Port = "3883";
 
-    string _address;
-    string _name;
-
-    string ip;
-
     [Header("以刚体名称进行数据接收")]
-    public bool isUsingTrackerName = false;
+    public bool isUsingTrackerName;
 
     [System.Serializable]
     public class JsonData
@@ -40,63 +31,51 @@ public class BodyTracker : MonoBehaviour
 
     private void Start()
     {
-        if (CMPluginThreadManager.CMPlugin != null) 
-        {            
-            CMPlugin = CMPluginThreadManager.CMPlugin;
-            _address = CMPlugin.ServerIp + ":" + Port;
+        plugin = CMPluginThreadManager.CMPlugin;
+        if (plugin == null)
+        {
+            return;
+        }
 
-            CMPluginThreadManager cmManager = FindFirstObjectByType<CMPluginThreadManager>();
+        int configuredPort;
+        int.TryParse(Port, out configuredPort);
+        string address = ChingMuAddress.Build(plugin.ServerIp, configuredPort);
+        trackerName = bodyName + "@" + ChingMuAddress.Host(address);
 
-            int atIndex = _address.IndexOf('@');
-            int colonIndex = _address.IndexOf(':');
+        CMPluginThreadManager manager = FindFirstObjectByType<CMPluginThreadManager>();
+        if (manager == null || !manager.isUsingConfig)
+        {
+            return;
+        }
 
-            if (atIndex >= 0 && colonIndex > atIndex)
-            {
-                ip = _address.Substring(atIndex + 1, colonIndex - atIndex - 1);
-            }
-
-            _name = bodyName + "@" + ip;
-
-            Debug.Log("IP: " + _name);
-
-            if (cmManager.isUsingConfig)
-            {
-                string filePath = Path.Combine(Application.streamingAssetsPath, "Config.json");
-                if (File.Exists(filePath))
-                {
-                    string jsonContent = File.ReadAllText(filePath);
-                    JsonData data = JsonUtility.FromJson<JsonData>(jsonContent);
-
-                    bodyId = data.bodiesID[BodyIDIndex];
-                    Debug.Log("Bodies: " + bodyId);
-                }
-                else
-                {
-                    Debug.LogError("JSON文件未找到！");
-                }
-            }
+        CMUTrackerPreset<int> preset = Config.Instance.CMTrackPreset;
+        if (preset != null && BodyIDIndex >= 0 && BodyIDIndex < preset.Bodies.Count)
+        {
+            bodyId = preset.Bodies[BodyIDIndex];
+        }
+        else
+        {
+            Debug.LogWarning("ChingMu body configuration index is not available.", this);
         }
     }
-    void FixedUpdate()
-    {
-        // 获取追踪体位置和旋转信息，第一个参数代表追踪系统的IP，第二个参数代表追踪体ID
-        bool IsInit = CMPlugin == null ? false : true;
 
-        if(isUsingTrackerName)
+    private void FixedUpdate()
+    {
+        if (plugin == null)
         {
-            if (IsInit)
-            {
-                CMPluginThreadManager.CMPlugin.GetTrackerPoseByName(_name, bodyId, out wPos, out wQuat);
-            }
-        }else
-        {
-            if (IsInit)
-            {
-                CMPluginThreadManager.CMPlugin.GetTrackerPose(bodyId, out wPos, out wQuat);  
-            }
+            return;
         }
-       
-        transform.localPosition = wPos;
-        transform.localRotation = wQuat;
+
+        if (isUsingTrackerName)
+        {
+            plugin.GetTrackerPoseByName(trackerName, bodyId, out worldPosition, out worldRotation);
+        }
+        else
+        {
+            plugin.GetTrackerPose(bodyId, out worldPosition, out worldRotation);
+        }
+
+        transform.localPosition = worldPosition;
+        transform.localRotation = worldRotation;
     }
 }

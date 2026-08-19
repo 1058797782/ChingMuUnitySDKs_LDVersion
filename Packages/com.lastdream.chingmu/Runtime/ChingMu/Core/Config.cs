@@ -1,86 +1,151 @@
-﻿using UnityEngine;
-using System.Collections;
-using System.IO;
-using System.Text;
-using System.Collections.Generic;
 using System;
-
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
 
 public class Config
 {
     private static Config instance;
-    public static Config Instance
-    {
-        get {
-            if (instance == null)
-            {
-               
-                instance = new Config();
-                instance.ReadConfig();
-            } 
-            return instance;
-        }
 
-    }
-    public  string ServerIP;
     private CMUTrackerPreset<int> cmTrackPreset;
-    public CMUTrackerPreset<int> CMTrackPreset
+
+    private Config()
+    {
+        Reload();
+    }
+
+    public static Config Instance
     {
         get
         {
-            if (cmTrackPreset != null)
+            if (instance == null)
             {
-                return cmTrackPreset;
+                instance = new Config();
             }
-            else
-            {
-                return null;
-            }
+
+            return instance;
         }
     }
-    private Config()
+
+    public string ServerIP;
+
+    public CMUTrackerPreset<int> CMTrackPreset
     {
-        
+        get { return cmTrackPreset; }
     }
-    private  void ReadConfig()
+
+    public bool IsLoaded { get; private set; }
+
+    public void Reload()
     {
-        string Application_dataPath = Application.dataPath;
-        Application_dataPath = Application_dataPath.Replace("/", "\\");
+        CMUTrackerPreset<int> loadedPreset;
+        IsLoaded = TryLoadPreset(out loadedPreset);
+        cmTrackPreset = loadedPreset ?? new CMUTrackerPreset<int>();
+        cmTrackPreset.EnsureCollections();
 
-        string jsonString = LoadFile(Application_dataPath, "Config.json");
-
-        cmTrackPreset = JsonUtility.FromJson<CMUTrackerPreset<int>>(jsonString);
-        ServerIP = "MCAvatar@" + cmTrackPreset.ServerIP;
+        string configuredAddress = !string.IsNullOrWhiteSpace(cmTrackPreset.ServerIP)
+            ? cmTrackPreset.ServerIP
+            : cmTrackPreset.serverIP;
+        ServerIP = ChingMuAddress.ApplyConfiguredHost("MCAvatar@", configuredAddress);
         cmTrackPreset.ServerIP = ServerIP;
-
     }
-    private string LoadFile(string path, string fileName)
+
+    public static bool TryReadServerAddress(out string serverAddress)
     {
-
-        if (!File.Exists(path + "\\"+ fileName))
+        CMUTrackerPreset<int> preset;
+        if (!TryLoadPreset(out preset) || preset == null)
         {
-            File.Create(path + "\\" + fileName);
-
+            serverAddress = string.Empty;
+            return false;
         }
 
-        return ReadJonsFile(path + "\\" + fileName);
+        serverAddress = !string.IsNullOrWhiteSpace(preset.ServerIP)
+            ? preset.ServerIP
+            : preset.serverIP;
+        return !string.IsNullOrWhiteSpace(serverAddress);
     }
+
     public static string ReadJonsFile(string JsonFlieUrl)
     {
-        StreamReader streamReader = new StreamReader(JsonFlieUrl, Encoding.UTF8);
-        string JsonString = streamReader.ReadToEnd();
-        streamReader.Close();
-        return JsonString;
+        return File.ReadAllText(JsonFlieUrl);
     }
 
-  
+    private static bool TryLoadPreset(out CMUTrackerPreset<int> preset)
+    {
+        preset = null;
+        string[] paths =
+        {
+            Path.Combine(Application.streamingAssetsPath, "Config.json"),
+            Path.Combine(Application.dataPath, "Config.json")
+        };
+
+        for (int index = 0; index < paths.Length; index++)
+        {
+            string path = paths[index];
+            if (!File.Exists(path))
+            {
+                continue;
+            }
+
+            try
+            {
+                string json = File.ReadAllText(path);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    continue;
+                }
+
+                preset = JsonUtility.FromJson<CMUTrackerPreset<int>>(json);
+                return preset != null;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError("ChingMu configuration could not be read: " + exception.Message);
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        instance = null;
+    }
 }
 
+[Serializable]
 public class CMUTrackerPreset<T>
 {
     public string ServerIP;
-    public List<T> Bodies;
-    public List<T> IMUBodies;
-    public List<T> Humans;
+    public string serverIP;
+    public List<T> Bodies = new List<T>();
+    public List<T> bodiesID = new List<T>();
+    public List<T> IMUBodies = new List<T>();
+    public List<T> Humans = new List<T>();
 
+    internal void EnsureCollections()
+    {
+        if (Bodies == null)
+        {
+            Bodies = new List<T>();
+        }
+        if (bodiesID == null)
+        {
+            bodiesID = new List<T>();
+        }
+        if (Bodies.Count == 0 && bodiesID.Count > 0)
+        {
+            Bodies.AddRange(bodiesID);
+        }
+        if (IMUBodies == null)
+        {
+            IMUBodies = new List<T>();
+        }
+        if (Humans == null)
+        {
+            Humans = new List<T>();
+        }
+    }
 }

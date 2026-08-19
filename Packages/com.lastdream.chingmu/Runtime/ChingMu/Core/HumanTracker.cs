@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Runtime.InteropServices;
+using AOT;
 
 public class HumanTracker : MonoBehaviour
 {
@@ -13,7 +13,6 @@ public class HumanTracker : MonoBehaviour
     public Dictionary<int, Transform> BonesIndexMapToTransform;
 
     CMVrpn.VrpnHumanMap CurHumanMapResult;
-    CMVrpn.VrpnHumanMap CurHumanMap;
     CMVrpn.UpdateHumanMapCallback GetCurHumanMapCallback;
     IntPtr callback_args;
 
@@ -26,6 +25,7 @@ public class HumanTracker : MonoBehaviour
     [HideInInspector]
     public string ServerID = string.Empty;
     bool IsRegisterCallBack_Finished = false;
+    readonly WaitForSeconds callbackRetryDelay = new WaitForSeconds(0.25f);
 
     
 
@@ -42,28 +42,57 @@ public class HumanTracker : MonoBehaviour
         getTPoseStatePreJoints_trans();
         getTPoseStatePreParentJoints_trans();
 
-        CurHumanMap = new CMVrpn.VrpnHumanMap();
         CurHumanMapResult = new CMVrpn.VrpnHumanMap();
 
-        callback_args = Marshal.AllocHGlobal(Marshal.SizeOf(CurHumanMap));
-        GetCurHumanMapCallback = GetHumanMap;
-        StartCoroutine(AsyRegisterCallBack_GetVrpnDataOrder());
+        if (CMPlugin != null && CMPlugin.cMpluginType == ChingMU.CMPluginAPI.CMPluginType.Vrpn)
+        {
+            callback_args = ChingMuCallbackRegistry.Register(this);
+            GetCurHumanMapCallback = OnHumanMap;
+            StartCoroutine(AsyRegisterCallBack_GetVrpnDataOrder());
+        }
     }
 
     bool RegisterCallback_IsFinished()
     {
-        bool IsFinished = CMVrpn.CMPluginRegisterHumanMap(CMPlugin.ServerIp+":"+CMPlugin.Port, callback_args, GetCurHumanMapCallback);
+        if (CMPlugin == null || GetCurHumanMapCallback == null)
+        {
+            return false;
+        }
+
+        bool IsFinished = CMVrpn.CMPluginRegisterHumanMap(
+            ChingMuAddress.Build(CMPlugin.ServerIp, CMPlugin.Port),
+            callback_args,
+            GetCurHumanMapCallback);
         return !IsFinished;
     }
     IEnumerator AsyRegisterCallBack_GetVrpnDataOrder()
     {
-        yield return new WaitWhile(RegisterCallback_IsFinished);
-        IsRegisterCallBack_Finished = true;
+        while (isActiveAndEnabled && !IsRegisterCallBack_Finished)
+        {
+            IsRegisterCallBack_Finished = !RegisterCallback_IsFinished();
+            if (!IsRegisterCallBack_Finished)
+            {
+                yield return callbackRetryDelay;
+            }
+        }
     }
-    void GetHumanMap(IntPtr CallBackFun_agrs, CMVrpn.VrpnHumanMap CurHumanMap)
+
+    [MonoPInvokeCallback(typeof(CMVrpn.UpdateHumanMapCallback))]
+    static void OnHumanMap(IntPtr callbackArgs, CMVrpn.VrpnHumanMap currentHumanMap)
     {
-        CurHumanMapResult = CurHumanMap;
-        Debug.Log("Human name:" + CurHumanMapResult.name + " "+ "Human id:" + CurHumanMapResult.sensor);
+        HumanTracker tracker;
+        if (ChingMuCallbackRegistry.TryGet(callbackArgs, out tracker))
+        {
+            tracker.CurHumanMapResult = currentHumanMap;
+        }
+    }
+
+    void OnDestroy()
+    {
+        StopAllCoroutines();
+        ChingMuCallbackRegistry.Unregister(callback_args);
+        callback_args = IntPtr.Zero;
+        GetCurHumanMapCallback = null;
     }
 
     void FixedUpdate()
@@ -77,7 +106,11 @@ public class HumanTracker : MonoBehaviour
             {
 
                 //模拟UE4组件空间旋转
-                BonesIndexMapToTransform[0].localPosition = pos;
+                Transform hips = BonesIndexMapToTransform[0];
+                if (hips != null)
+                {
+                    hips.localPosition = pos;
+                }
                 for (int i = 0; i < 63; i++)
                 {
                     if (BonesIndexMapToTransform[i] == null)
@@ -87,11 +120,6 @@ public class HumanTracker : MonoBehaviour
 
                     if (rot[i]!=Quaternion.identity)
                     {
-                        if(BonesIndexMapToTransform[i].ToString().Contains("Hand"))
-                        {
-                            Debug.Log(BonesIndexMapToTransform[i] + "||" + BonesIndexMapToTransform[i].localRotation);
-                        }
-
                         BonesIndexMapToTransform[i].localRotation = Quaternion.Inverse(TPoseStateParentJoints[i]) * rot[i] * TPoseStateJoints[i];
                     }
                 }
@@ -192,7 +220,8 @@ public class HumanTracker : MonoBehaviour
                 continue;
             }
 
-            TPoseStateParentJoints[i] = BonesIndexMapToTransform[i].parent.rotation;
+            Transform parent = BonesIndexMapToTransform[i].parent;
+            TPoseStateParentJoints[i] = parent != null ? parent.rotation : Quaternion.identity;
 
         }
     }

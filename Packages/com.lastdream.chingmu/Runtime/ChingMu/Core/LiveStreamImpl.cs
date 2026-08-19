@@ -1,179 +1,136 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using UnityEngine;
-using ChingMU;
-
 using System.Net;
-using System.Net.Sockets;
 using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using ChingMU;
+using UnityEngine;
 
 public class LiveStreamImpl : CMPluginCommonInterface
 {
-    string serverAddr;
-    int port;
-    CMPluginAPI.CMServerType serverType;
+    private readonly ChingMuLiveFrameReader frameReader = new ChingMuLiveFrameReader();
 
-    CMPluginAPI.CMPluginType CMPluginCommonInterface.cMpluginType
-    {
-        get { return CMPluginAPI.CMPluginType.LiveStream; }
-    }
+    private string serverAddress = string.Empty;
+    private int port;
+    private CMPluginAPI.CMServerType serverType = CMPluginAPI.CMServerType.MCAvatar;
 
-    CMPluginAPI.CMServerType CMPluginCommonInterface.cMserverType
+    public string ServerIp
     {
-        get { return serverType; }
+        get { return serverAddress; }
         set
         {
-            string[] str = serverAddr.Split('@');
-            if (str[0] == "MCAvatar")
-            {
-                serverType = CMPluginAPI.CMServerType.MCAvatar;
-            }
-            else
-                serverType = CMPluginAPI.CMServerType.MCAvatar;//MCServer;
+            serverAddress = value ?? string.Empty;
+            serverType = ChingMuAddress.ServerType(serverAddress);
         }
     }
 
-    string CMPluginCommonInterface.ServerIp 
-    {
-        get { return serverAddr; }
-        set { serverAddr = value; }
-    }
-
-    int CMPluginCommonInterface.Port 
+    public int Port
     {
         get { return port; }
         set { port = value; }
     }
 
-    bool CMPluginCommonInterface.ConnectCmServer()
+    public CMPluginAPI.CMPluginType cMpluginType
     {
-        CMPluginAPI.InitConnectInfoForLiveStream(GetIP(), serverAddr);
+        get { return CMPluginAPI.CMPluginType.LiveStream; }
+    }
 
+    public CMPluginAPI.CMServerType cMserverType
+    {
+        get { return serverType; }
+        set { serverType = value; }
+    }
+
+    public bool ConnectCmServer()
+    {
+        string serverHost = ChingMuAddress.Host(serverAddress);
+        if (serverHost.Length == 0)
+        {
+            return false;
+        }
+
+        CMPluginAPI.InitConnectInfoForLiveStream(GetIPForServer(serverHost), serverHost);
+        frameReader.Invalidate();
         return CMPluginAPI.ConnectToServer(2000);
     }
 
-    void CMPluginCommonInterface.StartCmThread() 
+    public void StartCmThread()
     {
         CMPluginAPI.StartClientThread();
     }
 
-    void CMPluginCommonInterface.QuitCmThread()
+    public void QuitCmThread()
     {
+        frameReader.Invalidate();
         CMPluginAPI.QuitClientThread();
     }
 
-    void CMPluginCommonInterface.GetTrackerPose( int BodyId ,out Vector3 wBodyPos,out Quaternion wBodyQuat) 
+    public void GetTrackerPose(int bodyId, out Vector3 worldPosition, out Quaternion worldRotation)
     {
-        wBodyPos = Vector3.zero;
-        wBodyQuat = Quaternion.identity;
-        CMPluginAPI.tFrame frameData = (CMPluginAPI.tFrame)Marshal.PtrToStructure(CMPluginAPI.GetFrameData(), typeof(CMPluginAPI.tFrame));
-
-        for (int i = 0; i < frameData.bodyNum; i++)
-        {
-            if (frameData.bodyData[i].id == BodyId)
-            {
-                wBodyPos = new Vector3(frameData.bodyData[i].pos.x, frameData.bodyData[i].pos.z, frameData.bodyData[i].pos.y) / 1000f;
-                wBodyQuat = new Quaternion(frameData.bodyData[i].quat.x,frameData.bodyData[i].quat.z,frameData.bodyData[i].quat.y,-frameData.bodyData[i].quat.w);
-                break;
-            }
-        }
+        frameReader.TryGetBodyPose(bodyId, out worldPosition, out worldRotation);
     }
 
-    void CMPluginCommonInterface.GetTrackerPoseByName(string name,int BodyId, out Vector3 wBodyPos, out Quaternion wBodyQuat)
+    public void GetTrackerPoseByName(
+        string name,
+        int bodyId,
+        out Vector3 worldPosition,
+        out Quaternion worldRotation)
     {
-        wBodyPos = Vector3.zero;
-        wBodyQuat = Quaternion.identity;
-        CMPluginAPI.tFrame frameData = (CMPluginAPI.tFrame)Marshal.PtrToStructure(CMPluginAPI.GetFrameData(), typeof(CMPluginAPI.tFrame));
-
-        for (int i = 0; i < frameData.bodyNum; i++)
-        {
-            if (frameData.bodyData[i].id == BodyId)
-            {
-                wBodyPos = new Vector3(frameData.bodyData[i].pos.x, frameData.bodyData[i].pos.z, frameData.bodyData[i].pos.y) / 1000f;
-                wBodyQuat = new Quaternion(frameData.bodyData[i].quat.x, frameData.bodyData[i].quat.z, frameData.bodyData[i].quat.y, -frameData.bodyData[i].quat.w);
-                break;
-            }
-        }
+        frameReader.TryGetBodyPose(bodyId, out worldPosition, out worldRotation);
     }
 
-    bool CMPluginCommonInterface.GetHumanWithoutRetargetPose(int HuamnId, out Vector3 wPos, Quaternion[] rot) 
+    public bool GetHumanWithoutRetargetPose(int humanId, out Vector3 worldPosition, Quaternion[] rotations)
     {
-        CMPluginAPI.tFrame frameData = (CMPluginAPI.tFrame)Marshal.PtrToStructure(CMPluginAPI.GetFrameData(), typeof(CMPluginAPI.tFrame));
-        int isDetected =0;
-        wPos = Vector3.zero;
-        for (int i =0;i<frameData.humanNum;i++) 
-        {
-            if (frameData.humanData[i].id== HuamnId) 
-            {
-                isDetected = frameData.humanData[i].isDetect;
-                wPos = new Vector3( frameData.humanData[i].rootPos.x,frameData.humanData[i].rootPos.z,frameData.humanData[i].rootPos.y)/1000f;
-                int segementNum = frameData.humanData[i].segementNum;
-                for (int j =0;j< segementNum; j++) 
-                {
-                    if (frameData.humanData[i].isSegmentDetect[j] == 1)
-                    {
-                        rot[j] = new Quaternion((float)frameData.humanData[i].segmentQuat[j].x, (float)frameData.humanData[i].segmentQuat[j].z, (float)frameData.humanData[i].segmentQuat[j].y, -(float)frameData.humanData[i].segmentQuat[j].w);
-                        //segmentIsDetected[j] = true;
-                    }
-                    else 
-                    {
-                        rot[j] = Quaternion.identity;
-                        //segmentIsDetected[j] = false;
-                    }
-                }
-                break;
-            }
-        }
-        return isDetected == 1 ? true : false;
+        return frameReader.TryGetHumanPose(humanId, null, rotations, out worldPosition, false);
     }
 
-    public bool GetHumanWithRetargetPose(int HumanID, Vector3[] lPos,  Quaternion[] lRot)
+    public bool GetHumanWithRetargetPose(int HumanID, Vector3[] lPos, Quaternion[] lRot)
     {
-        CMPluginAPI.tFrame  frameData = (CMPluginAPI.tFrame)Marshal.PtrToStructure(CMPluginAPI.GetFrameData(), typeof(CMPluginAPI.tFrame));
-        for (int i = 0; i < frameData.humanNum; i++)
-        {
-            if (frameData.humanData[i].id == HumanID)
-            {
-                Vector3 hipWpos = new Vector3(frameData.humanData[HumanID].rootPos.x, frameData.humanData[HumanID].rootPos.z, frameData.humanData[HumanID].rootPos.y) / 1000f;
-                lPos[1] = hipWpos;
-                for (int j = 0; j < 150; j++)
-                {
-                    lRot[j] = new Quaternion(frameData.humanData[HumanID].segmentQuat[j].x, frameData.humanData[HumanID].segmentQuat[j].z, frameData.humanData[HumanID].segmentQuat[j].y, -frameData.humanData[HumanID].segmentQuat[j].w);
-
-                }
-            }
-        }
-       
-        return frameData.humanData[HumanID].isDetect == 1 ? true : false;
+        Vector3 rootPosition;
+        return frameReader.TryGetHumanPose(HumanID, lPos, lRot, out rootPosition, true);
     }
 
-    /// <summary>
-    /// 获取本机IP
-    /// </summary>
-    /// <returns>string :ip地址</returns>
     public string GetIP()
     {
-        NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
-        foreach (NetworkInterface adater in adapters)
+        foreach (NetworkInterface adapter in NetworkInterface.GetAllNetworkInterfaces())
         {
-            if (adater.Supports(NetworkInterfaceComponent.IPv4))
+            if (adapter.OperationalStatus != OperationalStatus.Up ||
+                adapter.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+                adapter.NetworkInterfaceType == NetworkInterfaceType.Tunnel ||
+                !adapter.Supports(NetworkInterfaceComponent.IPv4))
             {
-                UnicastIPAddressInformationCollection UniCast = adater.GetIPProperties().UnicastAddresses;
-                if (UniCast.Count > 0)
-                {
-                    foreach (UnicastIPAddressInformation uni in UniCast)
-                    {
-                        if (uni.Address.AddressFamily == AddressFamily.InterNetwork)
+                continue;
+            }
 
-                        {
-                            Debug.Log(uni.Address.ToString());
-                            return uni.Address.ToString();
-                        }
-                    }
+            foreach (UnicastIPAddressInformation address in adapter.GetIPProperties().UnicastAddresses)
+            {
+                if (address.Address.AddressFamily == AddressFamily.InterNetwork &&
+                    !IPAddress.IsLoopback(address.Address))
+                {
+                    return address.Address.ToString();
                 }
             }
         }
-        return null;
+
+        return IPAddress.Loopback.ToString();
+    }
+
+    private string GetIPForServer(string serverHost)
+    {
+        try
+        {
+            using (Socket routeProbe = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                routeProbe.Connect(serverHost, 1);
+                IPEndPoint localEndPoint = routeProbe.LocalEndPoint as IPEndPoint;
+                if (localEndPoint != null)
+                {
+                    return localEndPoint.Address.ToString();
+                }
+            }
+        }
+        catch (SocketException)
+        {
+        }
+
+        return GetIP();
     }
 }

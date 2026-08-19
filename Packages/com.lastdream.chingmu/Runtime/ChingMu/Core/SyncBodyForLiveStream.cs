@@ -1,162 +1,266 @@
-﻿using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using AOT;
 using ChingMU;
 using UnityEngine;
 
 public class SyncBodyForLiveStream : MonoBehaviour
 {
-    // Start is called before the first frame update
+    private readonly List<int> bodyIds = new List<int>();
+    private readonly List<GameObject> bodyObjects = new List<GameObject>();
+    private readonly List<Transform> bodyTransforms = new List<Transform>();
+    private readonly HashSet<int> reservedBodyIds = new HashSet<int>();
+    private readonly object bodySync = new object();
+    private readonly ChingMuCallbackQueue callbackQueue = new ChingMuCallbackQueue();
 
-    private List<int> bodyIdList = new List<int>();
-    private List<GameObject> bodyList = new List<GameObject>();
-    private List<Transform> bodyTransformList = new List<Transform>();
-    private List<System.Action> actionList = new List<System.Action>();
-    private GCHandle handle1;
+    private CMPluginCommonInterface plugin;
+    private CMPluginAPI.callbackDelegate createBodyCallback;
+    private CMPluginAPI.callbackDelegate deleteBodyCallback;
+    private IntPtr callbackToken;
+    private bool createRegistered;
+    private bool deleteRegistered;
+    private Material lineMaterial;
+    private MaterialPropertyBlock colorProperties;
 
-    Vector3 BodyWpos;
-    Quaternion BodyWrot;
-    //bool IsFinishedCallback = false;
-    void CreateBodyCallbackFunc(System.IntPtr userdata, System.IntPtr info) //每次创建Body的时候，会回调一次这个函数，info是关于创建这个Body的关键信息，类型：aBodyInfo
+    private void Start()
     {
-        GCHandle handle2 = GCHandle.FromIntPtr(userdata);
-        SyncBodyForLiveStream monitor = (SyncBodyForLiveStream)handle2.Target;
-        CMPluginAPI.aBodyInfo bodyInfo = (CMPluginAPI.aBodyInfo)Marshal.PtrToStructure(info, typeof(CMPluginAPI.aBodyInfo));
-        if (!monitor.bodyIdList.Contains(bodyInfo.id))
-        {
-            monitor.actionList.Add(delegate
-            {
-                GameObject game = new GameObject(bodyInfo.name);
-                GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cube.transform.position = new Vector3(0, 0, 0);
-                cube.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-                cube.name = bodyInfo.name + "_soildRender";
-                cube.GetComponent<Renderer>().material.color = new Color((float)bodyInfo.rgb[0] / 255, (float)bodyInfo.rgb[1] / 255, (float)bodyInfo.rgb[2] / 255);
-                cube.transform.parent = game.transform;
-
-                //GameObject[] bodyMarkers = new GameObject[bodyInfo.markerNum];
-                for (int i = 0; i < bodyInfo.markerNum; ++i)
-                {
-                    GameObject bodyMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    bodyMarker.transform.position = new Vector3(bodyInfo.markerPos[i].x, bodyInfo.markerPos[i].z, bodyInfo.markerPos[i].y) / 1000f;
-                    bodyMarker.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-                    bodyMarker.transform.parent = game.transform;
-                    bodyMarker.name = bodyInfo.name + "Marker" + i;
-                    //string markerName = System.Text.Encoding.Default.GetString(bodyInfo.markerNames, i * 132, 132);
-                    //print(markerName);
-                }
-
-                LineRenderer lineRenderer = game.AddComponent<LineRenderer>();
-                List<Vector3> markerPoints = new List<Vector3>();
-                int cnt = 0;
-                for (int i = 0; i < bodyInfo.markerNum; ++i)
-                {
-                    for (int j = i + 1; j < bodyInfo.markerNum; ++j)
-                    {
-                        markerPoints.Add(new Vector3(bodyInfo.markerPos[i].x, bodyInfo.markerPos[i].z, bodyInfo.markerPos[i].y) / 1000f);
-                        markerPoints.Add(new Vector3(bodyInfo.markerPos[j].x, bodyInfo.markerPos[j].z, bodyInfo.markerPos[j].y) / 1000f);
-                        cnt += 2;
-                    }
-                }
-
-                lineRenderer.positionCount = cnt;
-                lineRenderer.SetPositions(markerPoints.ToArray());
-                lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-                lineRenderer.startColor = new Color((float)bodyInfo.rgb[0] / 255, (float)bodyInfo.rgb[1] / 255, (float)bodyInfo.rgb[2] / 255);
-                lineRenderer.endColor = new Color((float)bodyInfo.rgb[0] / 255, (float)bodyInfo.rgb[1] / 255, (float)bodyInfo.rgb[2] / 255);
-                lineRenderer.useWorldSpace = false;
-
-                lineRenderer.startWidth = 0.005f;
-                lineRenderer.endWidth = 0.005f;
-
-                monitor.bodyList.Add(game);
-                monitor.bodyTransformList.Add(game.transform);
-                monitor.bodyIdList.Add(bodyInfo.id);
-                print("create body " + bodyInfo.name);
-            });
-        }
-    }
-
-    public void DeleteBodyCallbackFunc(System.IntPtr userdata, System.IntPtr info) //删除刚体的时候，会回调一次这个函数，info，被删除刚体的id;
-    {
-        GCHandle handle2 = GCHandle.FromIntPtr(userdata);
-        SyncBodyForLiveStream monitor = (SyncBodyForLiveStream)handle2.Target;
-
-        int deletedBodyID = (int)Marshal.PtrToStructure(info, typeof(int));
-
-        monitor.actionList.Add(delegate
-        {
-            bool ret = false;
-            for (int i = 0; i < monitor.bodyList.Count; ++i)
-            {
-                if (deletedBodyID == monitor.bodyIdList[i])
-                {
-                    Destroy(monitor.bodyList[i]);
-                    monitor.bodyList.RemoveAt(i);
-                    monitor.bodyIdList.RemoveAt(i);
-                    monitor.bodyTransformList.RemoveAt(i);
-                    ret = true;
-                    print("delete body id : " + deletedBodyID);
-                    break;
-                }
-            }
-            if (!ret)
-            {
-                print("delete body id not found: " + deletedBodyID);
-            }
-        });
-    }
-
-    void Start()
-    {
-                                                 
-        if (CMPluginThreadManager.CMPlugin == null)
+        plugin = CMPluginThreadManager.CMPlugin;
+        if (plugin == null || plugin.cMpluginType != CMPluginAPI.CMPluginType.LiveStream)
         {
             return;
         }
-        handle1 = GCHandle.Alloc(this);
-        System.IntPtr userdata = GCHandle.ToIntPtr(handle1);
-        // create body register
-        CMPluginAPI.callbackDelegate createBodyFunc = new CMPluginAPI.callbackDelegate(CreateBodyCallbackFunc);
-        bool IsRegister = CMPluginAPI.RegisterCallback(CMPluginAPI.CallbackType.CREATE_BODY, createBodyFunc, userdata);
 
-        // delete body register
-        CMPluginAPI.callbackDelegate deleteBodyFunc = new CMPluginAPI.callbackDelegate(DeleteBodyCallbackFunc);
-        IsRegister = CMPluginAPI.RegisterCallback(CMPluginAPI.CallbackType.DELETE_BODY, deleteBodyFunc, userdata);
+        Shader lineShader = Shader.Find("Sprites/Default");
+        if (lineShader != null)
+        {
+            lineMaterial = new Material(lineShader) { name = "ChingMu Body Lines" };
+        }
+        colorProperties = new MaterialPropertyBlock();
+
+        callbackToken = ChingMuCallbackRegistry.Register(this);
+        createBodyCallback = OnCreateBody;
+        deleteBodyCallback = OnDeleteBody;
+        createRegistered = CMPluginAPI.RegisterCallback(
+            CMPluginAPI.CallbackType.CREATE_BODY,
+            createBodyCallback,
+            callbackToken);
+        deleteRegistered = CMPluginAPI.RegisterCallback(
+            CMPluginAPI.CallbackType.DELETE_BODY,
+            deleteBodyCallback,
+            callbackToken);
+
+        if (!createRegistered || !deleteRegistered)
+        {
+            Debug.LogWarning("One or more ChingMu body callbacks could not be registered.", this);
+        }
+    }
+
+    [MonoPInvokeCallback(typeof(CMPluginAPI.callbackDelegate))]
+    private static void OnCreateBody(IntPtr userdata, IntPtr info)
+    {
+        SyncBodyForLiveStream target;
+        if (info == IntPtr.Zero || !ChingMuCallbackRegistry.TryGet(userdata, out target))
+        {
+            return;
+        }
+
+        CMPluginAPI.aBodyInfo bodyInfo = Marshal.PtrToStructure<CMPluginAPI.aBodyInfo>(info);
+        if (target.TryReserveBody(bodyInfo.id))
+        {
+            target.callbackQueue.Enqueue(() => target.CreateBody(bodyInfo));
+        }
+    }
+
+    [MonoPInvokeCallback(typeof(CMPluginAPI.callbackDelegate))]
+    private static void OnDeleteBody(IntPtr userdata, IntPtr info)
+    {
+        SyncBodyForLiveStream target;
+        if (info == IntPtr.Zero || !ChingMuCallbackRegistry.TryGet(userdata, out target))
+        {
+            return;
+        }
+
+        int bodyId = Marshal.ReadInt32(info);
+        target.callbackQueue.Enqueue(() => target.DeleteBody(bodyId));
+    }
+
+    public void DeleteBodyCallbackFunc(IntPtr userdata, IntPtr info)
+    {
+        if (info != IntPtr.Zero)
+        {
+            int bodyId = Marshal.ReadInt32(info);
+            callbackQueue.Enqueue(() => DeleteBody(bodyId));
+        }
     }
 
     private void FixedUpdate()
     {
-        for (int i = 0; i < actionList.Count; ++i)
-        {
-            actionList[i]();
-        }
-        actionList.Clear();
-
-        if (CMPluginThreadManager.CMPlugin == null)
+        callbackQueue.Drain();
+        if (plugin == null)
         {
             return;
         }
-        else 
-        {
-            if (CMPluginThreadManager.CMPlugin.cMpluginType !=CMPluginAPI.CMPluginType.LiveStream) 
-            {
-                return;
-            }
-        }
-        CMPluginAPI.tFrame frameData = (CMPluginAPI.tFrame)Marshal.PtrToStructure(CMPluginAPI.GetFrameData(), typeof(CMPluginAPI.tFrame));
 
-        for (int k = 0; k < bodyIdList.Count; ++k)
+        for (int index = 0; index < bodyIds.Count; index++)
         {
-            CMPluginThreadManager.CMPlugin.GetTrackerPose(bodyIdList[k], out BodyWpos, out BodyWrot);
-            bodyTransformList[k].position = BodyWpos;
-            bodyTransformList[k].rotation = BodyWrot;
-
+            Vector3 position;
+            Quaternion rotation;
+            plugin.GetTrackerPose(bodyIds[index], out position, out rotation);
+            bodyTransforms[index].SetPositionAndRotation(position, rotation);
         }
     }
+
+    private bool TryReserveBody(int bodyId)
+    {
+        lock (bodySync)
+        {
+            return reservedBodyIds.Add(bodyId);
+        }
+    }
+
+    private void CreateBody(CMPluginAPI.aBodyInfo bodyInfo)
+    {
+        string bodyName = string.IsNullOrEmpty(bodyInfo.name) ? "Body " + bodyInfo.id : bodyInfo.name;
+        GameObject root = new GameObject(bodyName);
+        root.transform.SetParent(transform, false);
+
+        Color color = BodyColor(bodyInfo.rgb);
+        CreateMarker(PrimitiveType.Cube, bodyName + "_solid", Vector3.zero, root.transform, color);
+
+        int markerCount = bodyInfo.markerPos == null
+            ? 0
+            : Math.Min(Math.Max(bodyInfo.markerNum, 0), bodyInfo.markerPos.Length);
+        for (int index = 0; index < markerCount; index++)
+        {
+            Vector3 nativePosition = bodyInfo.markerPos[index];
+            Vector3 position = new Vector3(nativePosition.x, nativePosition.z, nativePosition.y) / 1000f;
+            CreateMarker(PrimitiveType.Sphere, bodyName + " Marker " + index, position, root.transform, color);
+        }
+
+        if (markerCount > 1)
+        {
+            LineRenderer lines = root.AddComponent<LineRenderer>();
+            int pointCount = markerCount * (markerCount - 1);
+            Vector3[] points = new Vector3[pointCount];
+            int pointIndex = 0;
+            for (int first = 0; first < markerCount; first++)
+            {
+                for (int second = first + 1; second < markerCount; second++)
+                {
+                    Vector3 firstNative = bodyInfo.markerPos[first];
+                    Vector3 secondNative = bodyInfo.markerPos[second];
+                    points[pointIndex++] = new Vector3(firstNative.x, firstNative.z, firstNative.y) / 1000f;
+                    points[pointIndex++] = new Vector3(secondNative.x, secondNative.z, secondNative.y) / 1000f;
+                }
+            }
+
+            lines.positionCount = points.Length;
+            lines.SetPositions(points);
+            lines.sharedMaterial = lineMaterial;
+            lines.startColor = color;
+            lines.endColor = color;
+            lines.useWorldSpace = false;
+            lines.startWidth = 0.005f;
+            lines.endWidth = 0.005f;
+        }
+
+        bodyObjects.Add(root);
+        bodyTransforms.Add(root.transform);
+        bodyIds.Add(bodyInfo.id);
+    }
+
+    private void DeleteBody(int bodyId)
+    {
+        for (int index = 0; index < bodyIds.Count; index++)
+        {
+            if (bodyIds[index] != bodyId)
+            {
+                continue;
+            }
+
+            Destroy(bodyObjects[index]);
+            bodyObjects.RemoveAt(index);
+            bodyTransforms.RemoveAt(index);
+            bodyIds.RemoveAt(index);
+            break;
+        }
+
+        lock (bodySync)
+        {
+            reservedBodyIds.Remove(bodyId);
+        }
+    }
+
+    private void CreateMarker(PrimitiveType type, string objectName, Vector3 position, Transform parent, Color color)
+    {
+        GameObject marker = GameObject.CreatePrimitive(type);
+        marker.name = objectName;
+        marker.transform.SetParent(parent, false);
+        marker.transform.localPosition = position;
+        marker.transform.localScale = Vector3.one * 0.01f;
+
+        Collider collider = marker.GetComponent<Collider>();
+        if (collider != null)
+        {
+            Destroy(collider);
+        }
+
+        Renderer renderer = marker.GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            colorProperties.SetColor("_Color", color);
+            colorProperties.SetColor("_BaseColor", color);
+            renderer.SetPropertyBlock(colorProperties);
+        }
+    }
+
+    private static Color BodyColor(int[] rgb)
+    {
+        return rgb != null && rgb.Length >= 3
+            ? new Color(rgb[0] / 255f, rgb[1] / 255f, rgb[2] / 255f)
+            : Color.white;
+    }
+
     private void OnDestroy()
     {
-        //CMPluginAPI.UnRegisterCallback(CMPluginAPI.CallbackType.CREATE_HUMAN, createHumanFunc);
-        handle1.Free();
+        UnregisterCallback(CMPluginAPI.CallbackType.CREATE_BODY, createBodyCallback, createRegistered);
+        UnregisterCallback(CMPluginAPI.CallbackType.DELETE_BODY, deleteBodyCallback, deleteRegistered);
+        ChingMuCallbackRegistry.Unregister(callbackToken);
+        callbackToken = IntPtr.Zero;
+        callbackQueue.Clear();
+
+        for (int index = 0; index < bodyObjects.Count; index++)
+        {
+            if (bodyObjects[index] != null)
+            {
+                Destroy(bodyObjects[index]);
+            }
+        }
+
+        if (lineMaterial != null)
+        {
+            Destroy(lineMaterial);
+        }
+    }
+
+    private void UnregisterCallback(
+        CMPluginAPI.CallbackType type,
+        CMPluginAPI.callbackDelegate callback,
+        bool registered)
+    {
+        if (!registered || callback == null)
+        {
+            return;
+        }
+
+        try
+        {
+            CMPluginAPI.UnRegisterCallback(type, callback);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning("ChingMu body callback could not be unregistered: " + exception.Message, this);
+        }
     }
 }

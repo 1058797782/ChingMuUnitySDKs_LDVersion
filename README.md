@@ -9,12 +9,12 @@
 | 项目 | 状态 |
 |---|---|
 | 官方基线 | ChingMu Unity SDK v3.0.1 |
-| 包版本 | `3.0.1-ld.1` |
+| 包版本 | `3.0.1-ld.2`（优化候选） |
 | Unity 基线 | `2022.3.60f1` |
-| 目标平台 | Windows，包含 x86 与 x86_64 native 插件 |
-| Runtime 源码 | 19 个 C# 文件 |
+| 目标平台 | Windows x86_64；官方 `x86` 目录中的 DLL 实际也是 x86_64 |
+| Runtime 源码 | 24 个 C# 文件及自动化测试 |
 | Native 插件 | 5 个 DLL |
-| 编译验证 | `LastDream.ChingMu`：0 error，5 个官方遗留 warning |
+| 编译验证 | `LastDream.ChingMu`：0 error，0 warning；设备信号验证待执行 |
 
 ## 安装
 
@@ -81,7 +81,7 @@ Assets/StreamingAssets/Config.json
 
 Unity Package Manager 不会把包内文件直接安装成使用方工程的 StreamingAssets，因此这一步保持为显式选择。
 
-当前官方 v3.0.1 的管理器在创建连接之后才读取文件配置。需要可靠控制服务端地址时，现阶段优先使用 Inspector 中的 `ServerIP` 和 `port`。
+当前维护版会在启动 native 线程与创建连接之前读取配置，并兼容 `ServerIP` / `serverIP` 以及旧模板的 `bodiesID` 字段。配置模板使用统一的 `Bodies`、`IMUBodies` 和 `Humans` 列表。
 
 ## 可选 Samples
 
@@ -132,14 +132,21 @@ Packages/com.lastdream.chingmu/
 - 从 `HumanTracker.cs` 删除未使用的 `Mono.Cecil` 引用，修复 Runtime 程序集的 `CS0246`。
 - 从 `VRPNSetup.cs` 删除未使用的 Visual Scripting 引用，避免无必要的包依赖。
 - 增加 `LastDream.ChingMu.asmdef`，建立明确的 Runtime 程序集边界。
-- 保留所有公开类名、序列化字段、native 入口和原始资源 GUID。
+- LiveStream 按目标 ID 直接读取原生内存，停止逐调用反序列化完整固定容量帧。
+- VRPN 人体、重定向和设备融合缓冲区改为复用，消除逐次采样数组分配。
+- native 回调使用 AOT 安全的静态入口、安全令牌和主线程队列，并补齐注销与清理。
+- 修复人物 ID 被误当数组下标、配置读取时序、回调委托丢失、跨线程列表竞争、资源缺失崩溃等问题。
+- 诊断扫描与高频日志默认关闭；LiveStream 可视化会在官方缺失预制体时使用程序化后备。
+- 修复 native 插件平台设置，并禁用官方错误标注为 x86 的同一份 x86_64 DLL。
+- 修复两个引用缺失 UVRPN 外部组件的可选场景，恢复包自身的 `BodyTracker`。
+- 保留公开组件类名、原始序列化字段、native 入口和资源 GUID。
 
 ## 已知限制
 
-- native DLL 面向 Windows；其他平台尚未验证。
+- native DLL 面向 Windows x86_64；其他平台和 32 位 Windows 不受支持。
 - 官方 `XR Origin.prefab` 引用了 v3.0.1 unitypackage 未包含的 XR Interaction Toolkit Sample 资源。
-- 官方 `SyncHumanForLiveStream` 会查找 `Resources/Point` 和 `Resources/FingerPoint`，但这两个预制体不在 v3.0.1 发布内容中。
-- 官方 Runtime 仍保留全局静态管理器及旧式线程生命周期设计，后续调整需要单独做行为回归。
+- `LiveStream.dll` 依赖 Visual C++ 2010 运行库，目标机器缺失时会在连接前加载失败。
+- 目前没有青瞳信号输入，连接、真实姿态、回调顺序和长时间 native 内存仍需硬件回归。
 - `Samples~/OfficialContent/Rescours` 的原始拼写为官方发布结构的一部分，为避免破坏引用而保留。
 
 ## 分支与版本

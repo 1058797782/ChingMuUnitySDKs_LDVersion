@@ -1,4 +1,6 @@
 {
-  "serverIP": "192.168.1.108",
-  "bodiesID": [ 999, 1, 2, 3, 4 ]
+  "serverIP": "127.0.0.1",
+  "Bodies": [ 0, 1, 2, 3, 4, 5 ],
+  "IMUBodies": [],
+  "Humans": [ 0 ]
 }

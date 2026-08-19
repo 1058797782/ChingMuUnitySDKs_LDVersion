@@ -1,170 +1,214 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using System;
 using ChingMU;
+using UnityEngine;
 
 public class VrpnImpl : CMPluginCommonInterface
 {
-    string serverAddr;
-    int port;
-    string NoRetargetServerAddr ;
-    string RetargetServerAddr;
+    private const int MaximumSegmentCount = 150;
 
-    CMPluginAPI.CMServerType serverType;
+    private readonly object humanBufferLock = new object();
+    private readonly double[] humanAttitude = new double[1000];
+    private readonly int[] humanSegmentDetected = new int[MaximumSegmentCount];
+    private readonly double[] retargetPosition = new double[3 * MaximumSegmentCount];
+    private readonly double[] retargetRotation = new double[4 * MaximumSegmentCount];
+    private readonly int[] retargetSegmentDetected = new int[MaximumSegmentCount];
 
-    int CMPluginCommonInterface.Port
+    private string serverAddress = string.Empty;
+    private string endpoint = string.Empty;
+    private int port;
+    private CMPluginAPI.CMServerType serverType;
+
+    public string ServerIp
     {
-        set 
-        { 
-            port = value;
-            NoRetargetServerAddr = serverAddr + ":" + port;
-            RetargetServerAddr = serverAddr + ":" + port;
+        get { return serverAddress; }
+        set
+        {
+            serverAddress = value ?? string.Empty;
+            endpoint = ChingMuAddress.Build(serverAddress, port);
+            serverType = ChingMuAddress.ServerType(serverAddress);
         }
-        get { return port; }
     }
 
-    string CMPluginCommonInterface.ServerIp 
+    public int Port
     {
-        set { serverAddr = value; }
-        get { return serverAddr; }
+        get { return port; }
+        set
+        {
+            port = value;
+            endpoint = ChingMuAddress.Build(serverAddress, port);
+        }
     }
-    CMPluginAPI.CMPluginType CMPluginCommonInterface.cMpluginType
+
+    public CMPluginAPI.CMPluginType cMpluginType
     {
         get { return CMPluginAPI.CMPluginType.Vrpn; }
     }
-    CMPluginAPI.CMServerType CMPluginCommonInterface.cMserverType
+
+    public CMPluginAPI.CMServerType cMserverType
     {
-        set
-        {
-            string[] str = serverAddr.Split('@');
-            if (str[0] == "MCAvatar")
-            {
-                serverType = CMPluginAPI.CMServerType.MCAvatar;
-            }else
-                serverType = CMPluginAPI.CMServerType.MCServer;
-        }
-        get { return serverType;}
-    }
-    bool CMPluginCommonInterface.ConnectCmServer() 
-    {
-        string ConnectStr = serverAddr + ":" + port;
-        return CMPluginAPI.CMPluginConnectServer(ConnectStr);
+        get { return serverType; }
+        set { serverType = value; }
     }
 
-    void CMPluginCommonInterface.StartCmThread()
+    public bool ConnectCmServer()
+    {
+        return endpoint.Length > 0 && CMPluginAPI.CMPluginConnectServer(endpoint);
+    }
+
+    public void StartCmThread()
     {
         CMPluginAPI.CMUnityStartExtern();
     }
 
-    void CMPluginCommonInterface.QuitCmThread()
+    public void QuitCmThread()
     {
         CMPluginAPI.CMUnityQuitExtern();
     }
 
-    void CMPluginCommonInterface.GetTrackerPose(int id, out Vector3 wBodyPos, out Quaternion wBodyQuat)
+    public void GetTrackerPose(int channel, out Vector3 worldPosition, out Quaternion worldRotation)
     {
-       
-        wBodyPos = new Vector3(
-        (float)CMPluginAPI.CMTrackerExtern(NoRetargetServerAddr, id, 0, Time.frameCount) / 1000f,
-        (float)CMPluginAPI.CMTrackerExtern(NoRetargetServerAddr, id, 2, Time.frameCount) / 1000f,
-        (float)CMPluginAPI.CMTrackerExtern(NoRetargetServerAddr, id, 1, Time.frameCount) / 1000f);
-        wBodyQuat = new Quaternion(
-        (float)CMPluginAPI.CMTrackerExtern(NoRetargetServerAddr, id, 3, Time.frameCount),
-        (float)CMPluginAPI.CMTrackerExtern(NoRetargetServerAddr, id, 5, Time.frameCount),
-        (float)CMPluginAPI.CMTrackerExtern(NoRetargetServerAddr, id, 4, Time.frameCount),
-       -(float)CMPluginAPI.CMTrackerExtern(NoRetargetServerAddr, id, 6, Time.frameCount));
-
+        ReadTrackerPose(endpoint, channel, out worldPosition, out worldRotation);
     }
 
-    void CMPluginCommonInterface.GetTrackerPoseByName(string name, int id, out Vector3 wBodyPos, out Quaternion wBodyQuat)
+    public void GetTrackerPoseByName(string name, int channel, out Vector3 worldPosition, out Quaternion worldRotation)
     {
-        wBodyPos = new Vector3(
-        (float)CMPluginAPI.CMTrackerExtern(name, id, 0, Time.frameCount) / 1000f,
-        (float)CMPluginAPI.CMTrackerExtern(name, id, 2, Time.frameCount) / 1000f,
-        (float)CMPluginAPI.CMTrackerExtern(name, id, 1, Time.frameCount) / 1000f);
-        wBodyQuat = new Quaternion(
-        (float)CMPluginAPI.CMTrackerExtern(name, id, 3, Time.frameCount),
-        (float)CMPluginAPI.CMTrackerExtern(name, id, 5, Time.frameCount),
-        (float)CMPluginAPI.CMTrackerExtern(name, id, 4, Time.frameCount),
-       -(float)CMPluginAPI.CMTrackerExtern(name, id, 6, Time.frameCount));
+        ReadTrackerPose(name, channel, out worldPosition, out worldRotation);
     }
 
-    bool CMPluginCommonInterface.GetHumanWithoutRetargetPose( int channel, out Vector3 pos, Quaternion[] rot) 
+    public bool GetHumanWithoutRetargetPose(int humanId, out Vector3 position, Quaternion[] rotations)
     {
-        double[] attitude = new double[1000];
-        int[] _isDetected = new int[150];
-        bool isDetected = CMPluginAPI.CMHumanExtern(NoRetargetServerAddr, channel, Time.frameCount, attitude, _isDetected);
-        pos = new Vector3();
-        if (isDetected)
+        position = Vector3.zero;
+        if (rotations == null || rotations.Length == 0 || endpoint.Length == 0)
         {
-            pos = new Vector3((float)attitude[0], (float)attitude[2], (float)attitude[1]) / 1000f;
-            for (int i = 0; i < 150; i++)
-            {
-                if (_isDetected[i] == 1)
-                {
-                    rot[i] = new Quaternion((float)attitude[i * 4 + 3], (float)attitude[i * 4 + 5], (float)attitude[i * 4 + 4], -(float)attitude[i * 4 + 6]);
-                    //segmentIsDetected[i] = true;
-                }
-                else
-                {
-                    rot[i] = Quaternion.identity;
-                    //segmentIsDetected[i] = false;
-                }
-            }
-        }
-        return isDetected;
-    }
-
-    bool CMPluginCommonInterface.GetHumanWithRetargetPose(int HumanID,  Vector3[] lPos,  Quaternion[] lRot)
-    {
-        int vrpntimecode = 0;
-        double[] bonePosition = new double[3 * 150];
-        double[] boneAttitude = new double[4 * 150];
-        int[] isBoneDetected = new int[150];
-        if (lPos == null || lRot == null)
             return false;
-
-
-       
-        //   Debug.Log("   "+ segmentNum);
-        string ConnectStr = serverAddr + ":" + port;
-        //string ConnectStr = "MCServer@127.0.0.1:3884";
-        int segmentNum = 150;
-        bool isHumanDetected = CMPluginAPI.CMRetargetHumanExternTC(ConnectStr, HumanID, Time.frameCount, ref vrpntimecode, bonePosition, boneAttitude, isBoneDetected);
-        if (isHumanDetected)
-        {
-            //set rotation
-            for (int i = 0; i < segmentNum; ++i)
-            {
-                if (isBoneDetected[i] == 1)
-                {
-
-                    //set pos
-                    lPos[i].x = (float)bonePosition[3 * i + 0] / 1000;
-                    lPos[i].y = (float)bonePosition[3 * i + 2] / 1000;
-                    lPos[i].z = (float)bonePosition[3 * i + 1] / 1000;
-
-
-                    //Maya Skeleton
-                    lRot[i] = new Quaternion((float)boneAttitude[i * 4 + 0], (float)boneAttitude[i * 4 + 2], (float)boneAttitude[i * 4 + 1], -(float)boneAttitude[i * 4 + 3]);
-                    //  Debug.Log(pos[i] + "  " + boneRot[i]);
-                    // segmentIsDetected[i] = true;
-                    if (float.IsNaN(lRot[i].x) || float.IsNaN(lRot[i].y)|| float.IsNaN(lRot[i].z)|| float.IsNaN(lRot[i].w)) 
-                    {
-                        lRot[i] = Quaternion.identity;
-                    }
-             
-                }
-                else
-                {
-                    lPos[i] = Vector3.zero;
-                    lRot[i] = Quaternion.identity;
-                    //segmentIsDetected[i] = false;
-                }
-            }
         }
-        return isHumanDetected;
+
+        lock (humanBufferLock)
+        {
+            bool detected = CMPluginAPI.CMHumanExtern(
+                endpoint,
+                humanId,
+                Time.frameCount,
+                humanAttitude,
+                humanSegmentDetected);
+
+            int count = Math.Min(MaximumSegmentCount, rotations.Length);
+            if (!detected)
+            {
+                FillIdentity(rotations, count);
+                return false;
+            }
+
+            position = new Vector3(
+                (float)humanAttitude[0],
+                (float)humanAttitude[2],
+                (float)humanAttitude[1]) / 1000f;
+
+            for (int index = 0; index < count; index++)
+            {
+                rotations[index] = humanSegmentDetected[index] == 1
+                    ? new Quaternion(
+                        (float)humanAttitude[index * 4 + 3],
+                        (float)humanAttitude[index * 4 + 5],
+                        (float)humanAttitude[index * 4 + 4],
+                        -(float)humanAttitude[index * 4 + 6])
+                    : Quaternion.identity;
+            }
+
+            return true;
+        }
     }
 
+    public bool GetHumanWithRetargetPose(int humanId, Vector3[] positions, Quaternion[] rotations)
+    {
+        if (positions == null || rotations == null || endpoint.Length == 0)
+        {
+            return false;
+        }
 
+        lock (humanBufferLock)
+        {
+            int timecode = 0;
+            bool detected = CMPluginAPI.CMRetargetHumanExternTC(
+                endpoint,
+                humanId,
+                Time.frameCount,
+                ref timecode,
+                retargetPosition,
+                retargetRotation,
+                retargetSegmentDetected);
+
+            int count = Math.Min(MaximumSegmentCount, Math.Min(positions.Length, rotations.Length));
+            if (!detected)
+            {
+                FillIdentity(rotations, count);
+                return false;
+            }
+
+            for (int index = 0; index < count; index++)
+            {
+                if (retargetSegmentDetected[index] != 1)
+                {
+                    positions[index] = Vector3.zero;
+                    rotations[index] = Quaternion.identity;
+                    continue;
+                }
+
+                positions[index] = new Vector3(
+                    (float)retargetPosition[3 * index],
+                    (float)retargetPosition[3 * index + 2],
+                    (float)retargetPosition[3 * index + 1]) / 1000f;
+
+                Quaternion rotation = new Quaternion(
+                    (float)retargetRotation[index * 4],
+                    (float)retargetRotation[index * 4 + 2],
+                    (float)retargetRotation[index * 4 + 1],
+                    -(float)retargetRotation[index * 4 + 3]);
+                rotations[index] = IsFinite(rotation) ? rotation : Quaternion.identity;
+            }
+
+            return true;
+        }
+    }
+
+    private static void ReadTrackerPose(
+        string address,
+        int channel,
+        out Vector3 worldPosition,
+        out Quaternion worldRotation)
+    {
+        worldPosition = Vector3.zero;
+        worldRotation = Quaternion.identity;
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return;
+        }
+
+        int frame = Time.frameCount;
+        worldPosition = new Vector3(
+            (float)CMPluginAPI.CMTrackerExtern(address, channel, 0, frame) / 1000f,
+            (float)CMPluginAPI.CMTrackerExtern(address, channel, 2, frame) / 1000f,
+            (float)CMPluginAPI.CMTrackerExtern(address, channel, 1, frame) / 1000f);
+        worldRotation = new Quaternion(
+            (float)CMPluginAPI.CMTrackerExtern(address, channel, 3, frame),
+            (float)CMPluginAPI.CMTrackerExtern(address, channel, 5, frame),
+            (float)CMPluginAPI.CMTrackerExtern(address, channel, 4, frame),
+            -(float)CMPluginAPI.CMTrackerExtern(address, channel, 6, frame));
+    }
+
+    private static void FillIdentity(Quaternion[] rotations, int count)
+    {
+        for (int index = 0; index < count; index++)
+        {
+            rotations[index] = Quaternion.identity;
+        }
+    }
+
+    private static bool IsFinite(Quaternion value)
+    {
+        return !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
+               !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
+               !float.IsNaN(value.z) && !float.IsInfinity(value.z) &&
+               !float.IsNaN(value.w) && !float.IsInfinity(value.w);
+    }
 }

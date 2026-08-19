@@ -1,6 +1,6 @@
-using System.Linq;
-using UnityEngine;
+using System;
 using System.IO;
+using UnityEngine;
 
 public class LabelMarker : MonoBehaviour
 {
@@ -11,18 +11,15 @@ public class LabelMarker : MonoBehaviour
     }
 
     public PointsType pointsType = PointsType.Eighteen;
-
-    Vector3 wPos = new Vector3();
-    Quaternion wQuat = new Quaternion();
-
-    CMPluginCommonInterface CMPlugin;
-
-    int[] bodyIds;
-
     public string Port = "3883";
-    string _address;
+    public bool captureEnabled;
+    public bool logToConsole;
+    public bool writeToFile;
+    public float sampleInterval = 0.25f;
+    public string logFileName = "ChingMuMarkers.log";
 
-    string[] fullbodylabels = {
+    private static readonly string[] FullBodyLabels =
+    {
         "M-LBHIPO", "M-LFHIP1", "M-BHIP2", "M-FHIP3", "M-RBHTP4", "M-RFHIP5",
         "M-BTORSO6", "M-FTORSO7", "M-BCHEST8", "M-FCHEST9", "M-THEAD10", "M-FHEAD11",
         "M-BHEAD12", "M-RHEAD13", "M-LHEAD14", "L-BSHOULD15", "L-FSHOULD16", "L-UPARM17",
@@ -32,78 +29,93 @@ public class LabelMarker : MonoBehaviour
         "L-LEG36", "L-IKNEE37", "L-OKNEE38", "L-OFOOT39"
     };
 
-    string[] labels = {
-        "LCIST", "LASIS", "RCIST", "RASIS", "LTROC", "LLEP",
-        "LMEP", "LLME", "LMME", "LHM5", "LHM1", "RTROC",
-        "RLEP", "RMEP", "RLME", "RMME", "RHM5", "RHM1"
+    private static readonly string[] Labels =
+    {
+        "LCIST", "LASIS", "RCIST", "RASIS", "LTROC", "LLEP", "LMEP", "LLME", "LMME",
+        "LHM5", "LHM1", "RTROC", "RLEP", "RMEP", "RLME", "RMME", "RHM5", "RHM1"
     };
 
-    HumanTracker humanTracker;
-
-    //写入文件
-    StreamWriter logWriter;
-    string logFilePath;
+    private CMPluginCommonInterface plugin;
+    private HumanTracker humanTracker;
+    private int[] bodyIds;
+    private StreamWriter logWriter;
+    private float nextSampleTime;
 
     private void Start()
     {
+        plugin = CMPluginThreadManager.CMPlugin;
         humanTracker = GetComponent<HumanTracker>();
-
-        // 设置日志文件路径
-        logFilePath = Path.Combine(Application.dataPath, "LogFile.txt");
-        logWriter = new StreamWriter(logFilePath, true);
-
-        if (CMPluginThreadManager.CMPlugin != null)
+        string[] labels = CurrentLabels;
+        bodyIds = new int[labels.Length];
+        for (int index = 0; index < bodyIds.Length; index++)
         {
-            CMPlugin = CMPluginThreadManager.CMPlugin;
-            _address = CMPlugin.ServerIp + ":" + Port;
+            bodyIds[index] = 6300 + index;
+        }
 
-            string[] currentLabels = pointsType == PointsType.Forty ? fullbodylabels : labels;
-            bodyIds = Enumerable.Range(6300, currentLabels.Length).ToArray();
+        if (captureEnabled && writeToFile)
+        {
+            string safeName = Path.GetFileName(logFileName);
+            string path = Path.Combine(Application.persistentDataPath, safeName);
+            logWriter = new StreamWriter(path, true);
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (!captureEnabled || plugin == null || Time.unscaledTime < nextSampleTime)
+        {
+            return;
+        }
+
+        nextSampleTime = Time.unscaledTime + Math.Max(0.02f, sampleInterval);
+        string[] labels = CurrentLabels;
+        for (int index = 0; index < bodyIds.Length; index++)
+        {
+            Vector3 position;
+            Quaternion rotation;
+            plugin.GetTrackerPose(bodyIds[index], out position, out rotation);
+            WriteMessage(labels[index] + " == " + position);
+        }
+
+        if (humanTracker == null || humanTracker.BonesIndexMapToTransform == null)
+        {
+            return;
+        }
+
+        foreach (var pair in humanTracker.BonesIndexMapToTransform)
+        {
+            Transform bone = pair.Value;
+            if (bone != null)
+            {
+                WriteMessage("Bone " + pair.Key + " " + bone.name + " Position " +
+                             bone.localPosition + " Rotation " + bone.localRotation.eulerAngles);
+            }
+        }
+    }
+
+    private string[] CurrentLabels
+    {
+        get { return pointsType == PointsType.Forty ? FullBodyLabels : Labels; }
+    }
+
+    private void WriteMessage(string message)
+    {
+        if (logToConsole)
+        {
+            Debug.Log(message, this);
+        }
+        if (logWriter != null)
+        {
+            logWriter.WriteLine(message);
         }
     }
 
     private void OnDestroy()
     {
-        // 确保在销毁对象时关闭文件
         if (logWriter != null)
         {
-            logWriter.Close();
-        }
-    }
-
-    void FixedUpdate()
-    {       
-        bool IsInit = CMPlugin == null ? false : true;
-        if (IsInit)
-        {
-            string[] currentLabels = pointsType == PointsType.Forty ? fullbodylabels : labels;
-            for (int i = 0; i < bodyIds.Length; i++)
-            {
-                int bodyId = bodyIds[i];
-                CMPluginThreadManager.CMPlugin.GetTrackerPose(bodyId, out wPos, out wQuat);
-                transform.localPosition = CMVrpn.CMPos(_address, bodyId);
-
-                string logMessage = $"{currentLabels[i]} == {transform.localPosition}";
-                Debug.Log(logMessage);
-                logWriter.WriteLine(logMessage);
-            }
-
-            if(humanTracker)
-            {
-                for (int i = 0; i < humanTracker.BonesIndexMapToTransform.Count; i++)
-                {
-                    if (humanTracker.BonesIndexMapToTransform.ContainsKey(i) && humanTracker.BonesIndexMapToTransform[i] != null)
-                    {
-                        var boneTransform = humanTracker.BonesIndexMapToTransform[i];
-                        string logMessage = $"Bone Index: {i}, Bone Name: {boneTransform.name}, " +
-                                            $"Local Position: {boneTransform.localPosition}, " +
-                                            $"Local Rotation: {boneTransform.localRotation.eulerAngles}";
-                        Debug.Log(logMessage);
-                        logWriter.WriteLine(logMessage);
-                    }
-                }
-            }
-            logWriter.Flush();
+            logWriter.Dispose();
+            logWriter = null;
         }
     }
 }

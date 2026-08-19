@@ -1,0 +1,21 @@
+{
+  "name": "LastDream.ChingMu.Tests",
+  "rootNamespace": "",
+  "references": [
+    "LastDream.ChingMu"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "noEngineReferences": false
+}

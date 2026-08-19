@@ -1,158 +1,98 @@
-﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class SixIKCaptureWithCMBody : MonoBehaviour
 {
-    Animator animator;
     [Range(-1f, 1f)]
-    public float RealHuamnMassOffset = 0;
+    public float RealHuamnMassOffset;
     public Transform CharacterHipTrans;
     public Transform CharacterHeadTrans;
     public Transform CharacterLeftFootTrans;
     public Transform CharacterRightFootTrans;
-    Quaternion saveCharacterLeftFootRot;
-    Quaternion saveCharacterRightFootRot;
-    float characterHipHeight = 0;
-    void Start()
+
+    private Animator animator;
+    private float characterHipHeight;
+    private bool IsSacle;
+    private bool configurationReady;
+    private string serverAddress;
+    private CMUTrackerPreset<int> preset;
+
+    private void Start()
     {
-        animator = transform.GetComponent<Animator>();
-        saveCharacterLeftFootRot = CharacterLeftFootTrans.localRotation;
-        saveCharacterRightFootRot = CharacterRightFootTrans.localRotation;
+        animator = GetComponent<Animator>();
+        preset = Config.Instance.CMTrackPreset;
+        serverAddress = Config.Instance.ServerIP;
+        configurationReady = animator != null && CharacterHipTrans != null &&
+                             preset != null && preset.Bodies != null && preset.Bodies.Count >= 6 &&
+                             !string.IsNullOrWhiteSpace(ChingMuAddress.Host(serverAddress));
+
+        if (!configurationReady)
+        {
+            Debug.LogWarning("ChingMu six-point capture requires an Animator, a hip transform, and six body IDs in Config.json.", this);
+            enabled = false;
+            return;
+        }
 
         characterHipHeight = CharacterHipTrans.position.y;
-    }
-
-    void ScaleHuman(float characterHipHeight, float humanHipHeight)
-    {
-        float SclaeFactor = humanHipHeight / characterHipHeight;
-        transform.localScale = new Vector3(SclaeFactor, SclaeFactor, SclaeFactor);
-    }
-
-    bool ScaleCharacter(string server, int hipBodyId)
-    {
-        float humanHipHeight = CMVrpn.CMPos(server, hipBodyId).y;
-        if (humanHipHeight > 0.6f)
+        if (Mathf.Abs(characterHipHeight) <= Mathf.Epsilon)
         {
-            ScaleHuman(characterHipHeight, humanHipHeight);
-            return true;
-        }
-        else
-        {
-            return false;
+            Debug.LogWarning("ChingMu six-point capture cannot scale a character with zero hip height.", this);
+            enabled = false;
         }
     }
 
-    bool IsSacle = false;
-    void Update()
+    private void Update()
     {
         if (!IsSacle)
         {
-            IsSacle = ScaleCharacter(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[1]);
+            IsSacle = ScaleCharacter(preset.Bodies[1]);
         }
     }
 
-    /*
-    debug:
-    public Transform hipTrans;
-    public Transform leftHandTrans;
-    public Transform rightHandTrans;
-    public Transform leftFootTrans;
-    public Transform rightFootTrans;
-    private void FixedUpdate()
+    private bool ScaleCharacter(int hipBodyId)
     {
-        //设置BodyMass;
-        Vector3 HipPos_w = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[1]);
-        Quaternion HipRotation_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[1]);
-        hipTrans.position = HipPos_w;
+        float humanHipHeight = CMVrpn.CMPos(serverAddress, hipBodyId).y;
+        if (humanHipHeight <= 0.6f)
+        {
+            return false;
+        }
 
-        //设置LeftHand;
-        Vector3 LeftHandPos_w = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[2]);
-        Quaternion LeftHandQua_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[2]);
-        leftHandTrans.position = LeftHandPos_w;
-
-
-        //设置RightHand;
-        Vector3 rightHandPos_w = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[3]);
-        Quaternion rightHandQua_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[3]);
-        rightHandTrans.position = rightHandPos_w;
-
-
-        //设置LeftFoot;
-        Vector3 leftFootPos_w = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[4]);
-        Quaternion leftFootQua_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[4]);
-        leftFootTrans.position = leftFootPos_w;
-
-        //设置RightFoot;
-        Vector3 rightFootPos_w = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[5]);
-        Quaternion rightFootQua_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[5]);
-        rightFootTrans.position = rightFootPos_w;
+        float scaleFactor = humanHipHeight / characterHipHeight;
+        transform.localScale = Vector3.one * scaleFactor;
+        return true;
     }
-    */
 
-    private void FixedUpdate()
-    {
-
-
-    }
     private void OnAnimatorIK(int layerIndex)
     {
-
-        if (IsSacle)
+        if (!configurationReady || !IsSacle)
         {
-
-            //设置BodyMass;
-            Vector3 HipPos_w = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[1]);
-            Quaternion HipRotation_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[1]);
-            animator.bodyPosition = new Vector3(HipPos_w.x, HipPos_w.y - RealHuamnMassOffset, HipPos_w.z);
-            animator.bodyRotation = HipRotation_w;
-
-
-            //设置head;
-            Vector3 HeadPos_w = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[0]);
-            Quaternion HeadRotation_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[0]);
-            Quaternion newq = Quaternion.Inverse(HipRotation_w) * HeadRotation_w;
-            animator.SetBoneLocalRotation(HumanBodyBones.Head, newq);
-
-
-            //设置LeftHand;
-            Vector3 LeftHandPos_w = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[2]);
-            Quaternion LeftHandQua_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[2]);
-            animator.SetIKPosition(AvatarIKGoal.LeftHand, LeftHandPos_w);
-            animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 1);
-
-
-
-            //设置RightHand;
-            Vector3 rightHandPos_w = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[3]);
-            Quaternion rightHandQua_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[3]);
-            animator.SetIKPosition(AvatarIKGoal.RightHand, rightHandPos_w);
-            animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 1);
-
-
-
-
-            //设置LeftFoot;
-            Vector3 Lpos = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[4]);
-            Vector3 leftFootPos_w = new Vector3(Lpos.x, Lpos.y - RealHuamnMassOffset, Lpos.z);
-            Quaternion leftFootQua_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[4]);
-            animator.SetIKPosition(AvatarIKGoal.LeftFoot, leftFootPos_w);
-            animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
-            //animator.SetBoneLocalRotation(HumanBodyBones.LeftFoot, saveCharacterLeftFootRot);
-
-
-
-            //设置RightFoot;
-            Vector3 Rpos = CMVrpn.CMPos(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[5]);
-            Vector3 rightFootPos_w = new Vector3(Rpos.x, Rpos.y - RealHuamnMassOffset, Rpos.z);
-            Quaternion rightFootQua_w = CMVrpn.CMQuat(Config.Instance.ServerIP, Config.Instance.CMTrackPreset.Bodies[5]);
-            animator.SetIKPosition(AvatarIKGoal.RightFoot, rightFootPos_w);
-            animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);
-            //animator.SetBoneLocalRotation(HumanBodyBones.RightFoot, saveCharacterRightFootRot);
-
+            return;
         }
 
+        Vector3 hipPosition = CMVrpn.CMPos(serverAddress, preset.Bodies[1]);
+        Quaternion hipRotation = CMVrpn.CMQuat(serverAddress, preset.Bodies[1]);
+        animator.bodyPosition = new Vector3(
+            hipPosition.x,
+            hipPosition.y - RealHuamnMassOffset,
+            hipPosition.z);
+        animator.bodyRotation = hipRotation;
 
+        Quaternion headRotation = CMVrpn.CMQuat(serverAddress, preset.Bodies[0]);
+        animator.SetBoneLocalRotation(HumanBodyBones.Head, Quaternion.Inverse(hipRotation) * headRotation);
+
+        SetIkPosition(AvatarIKGoal.LeftHand, CMVrpn.CMPos(serverAddress, preset.Bodies[2]), false);
+        SetIkPosition(AvatarIKGoal.RightHand, CMVrpn.CMPos(serverAddress, preset.Bodies[3]), false);
+        SetIkPosition(AvatarIKGoal.LeftFoot, CMVrpn.CMPos(serverAddress, preset.Bodies[4]), true);
+        SetIkPosition(AvatarIKGoal.RightFoot, CMVrpn.CMPos(serverAddress, preset.Bodies[5]), true);
     }
 
+    private void SetIkPosition(AvatarIKGoal goal, Vector3 position, bool applyMassOffset)
+    {
+        if (applyMassOffset)
+        {
+            position.y -= RealHuamnMassOffset;
+        }
+
+        animator.SetIKPosition(goal, position);
+        animator.SetIKPositionWeight(goal, 1f);
+    }
 }

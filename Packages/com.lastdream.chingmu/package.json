@@ -1,12 +1,15 @@
 {
   "name": "com.lastdream.chingmu",
-  "version": "3.0.1-ld.1",
+  "version": "3.0.1-ld.2",
   "displayName": "ChingMu Unity SDK - LD Version",
   "description": "Unity Package Manager layout for the ChingMu Unity SDK v3.0.1 runtime, native plugins, documentation, and optional official content.",
   "unity": "2022.3",
   "documentationUrl": "https://github.com/1058797782/ChingMuUnitySDKs_LDVersion/tree/main/Packages/com.lastdream.chingmu",
   "changelogUrl": "https://github.com/1058797782/ChingMuUnitySDKs_LDVersion/blob/main/Packages/com.lastdream.chingmu/CHANGELOG.md",
   "dependencies": {
+    "com.unity.textmeshpro": "3.0.7",
+    "com.unity.ugui": "1.0.0",
+    "com.unity.modules.animation": "1.0.0",
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.physics": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
@@ -24,7 +27,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/1058797782/ChingMuUnitySDKs_LDVersion.git",
-    "revision": "v3.0.1-ld.1"
+    "revision": "featrue/ld-tryfixchingmu"
   },
   "samples": [
     {

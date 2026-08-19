@@ -284,48 +284,86 @@ namespace ChingMU
 
         public static void HumanAttitudeLiveStream(tFrame frame, int humanID, out Vector3 humanPos, [In, Out] Quaternion[] rot)
         {
-            humanPos = new Vector3((float)frame.humanData[humanID].rootPos.x, (float)frame.humanData[humanID].rootPos.z, (float)frame.humanData[humanID].rootPos.y) / 1000f;
-
-            for (int i = 0; i < 150; i++)
+            humanPos = Vector3.zero;
+            int index = FindHumanIndex(frame, humanID);
+            if (index < 0 || rot == null)
             {
-                rot[i] = new Quaternion((float)frame.humanData[humanID].segmentQuat[i].x, (float)frame.humanData[humanID].segmentQuat[i].z, (float)frame.humanData[humanID].segmentQuat[i].y, -(float)frame.humanData[humanID].segmentQuat[i].w);
+                return;
             }
 
+            humanPos = new Vector3((float)frame.humanData[index].rootPos.x, (float)frame.humanData[index].rootPos.z, (float)frame.humanData[index].rootPos.y) / 1000f;
 
+            if (frame.humanData[index].segmentQuat == null)
+            {
+                return;
+            }
+
+            int count = Math.Min(150, Math.Min(rot.Length, frame.humanData[index].segmentQuat.Length));
+            for (int i = 0; i < count; i++)
+            {
+                rot[i] = new Quaternion((float)frame.humanData[index].segmentQuat[i].x, (float)frame.humanData[index].segmentQuat[i].z, (float)frame.humanData[index].segmentQuat[i].y, -(float)frame.humanData[index].segmentQuat[i].w);
+            }
         }
 
         public static void HumanRetargetAttitudeLiveStream(tFrame frame, int humanID, out Vector3 humanPos, [In, Out] Quaternion[] rot)
         {
-            humanPos = new Vector3((float)frame.humanData[humanID].rootPos.x, (float)frame.humanData[humanID].rootPos.z, (float)frame.humanData[humanID].rootPos.y) / 1000f;
-
-            for (int i = 0; i < 150; i++)
-            {
-                rot[i] = new Quaternion((float)frame.humanData[humanID].segmentQuat[i].x, (float)frame.humanData[humanID].segmentQuat[i].z, (float)frame.humanData[humanID].segmentQuat[i].y, -(float)frame.humanData[humanID].segmentQuat[i].w);
-            }
+            HumanAttitudeLiveStream(frame, humanID, out humanPos, rot);
         }
-
-        //public static void HumanRetargetAttitudeLiveStream(int humanID, [In, Out] Vector3[] LocalPos, [In, Out] Quaternion[] LocalRot)
-        //{
-        //    tFrame frameData = (tFrame)Marshal.PtrToStructure(GetFrameData(), typeof(tFrame));
-        //    Vector3 hipWpos  = new Vector3((float)frameData.humanData[humanID].rootPos.x, (float)frameData.humanData[humanID].rootPos.z, (float)frameData.humanData[humanID].rootPos.y) / 1000f;
-        //    LocalPos[1] = hipWpos;
-        //    for (int i = 0; i < 150; i++)
-        //    {
-        //        LocalRot[i] = new Quaternion((float)frameData.humanData[humanID].segmentQuat[i].x, (float)frameData.humanData[humanID].segmentQuat[i].z, (float)frameData.humanData[humanID].segmentQuat[i].y, -(float)frameData.humanData[humanID].segmentQuat[i].w);
-        //    }
-        //    return frameData.humanData[humanID].isDetect;
-        //}
-
 
         public static void BodyAttitudeLiveStream(tFrame frame, int bodyID, out Vector3 pos, out Quaternion rot)
         {
-            pos = new Vector3((float)frame.bodyData[bodyID].pos.x, (float)frame.bodyData[bodyID].pos.z, (float)frame.bodyData[bodyID].pos.y) / 1000f;
+            pos = Vector3.zero;
+            rot = Quaternion.identity;
+            if (frame.bodyData == null)
+            {
+                return;
+            }
 
-            rot = new Quaternion((float)frame.bodyData[bodyID].quat.x, (float)frame.bodyData[bodyID].quat.z, (float)frame.bodyData[bodyID].quat.y, -(float)frame.bodyData[bodyID].quat.w);
+            int index = FindBodyIndex(frame, bodyID);
+            if (index >= 0)
+            {
+                pos = new Vector3((float)frame.bodyData[index].pos.x, (float)frame.bodyData[index].pos.z, (float)frame.bodyData[index].pos.y) / 1000f;
+                rot = new Quaternion((float)frame.bodyData[index].quat.x, (float)frame.bodyData[index].quat.z, (float)frame.bodyData[index].quat.y, -(float)frame.bodyData[index].quat.w);
+            }
         }
 
+        private static int FindHumanIndex(tFrame frame, int humanID)
+        {
+            if (frame.humanData == null)
+            {
+                return -1;
+            }
 
-     
+            int count = Math.Min(Math.Max(frame.humanNum, 0), frame.humanData.Length);
+            for (int index = 0; index < count; index++)
+            {
+                if (frame.humanData[index].id == humanID)
+                {
+                    return index;
+                }
+            }
+
+            return humanID >= 0 && humanID < count ? humanID : -1;
+        }
+
+        private static int FindBodyIndex(tFrame frame, int bodyID)
+        {
+            if (frame.bodyData == null)
+            {
+                return -1;
+            }
+
+            int count = Math.Min(Math.Max(frame.bodyNum, 0), frame.bodyData.Length);
+            for (int index = 0; index < count; index++)
+            {
+                if (frame.bodyData[index].id == bodyID)
+                {
+                    return index;
+                }
+            }
+
+            return bodyID >= 0 && bodyID < count ? bodyID : -1;
+        }
     }
 }
 

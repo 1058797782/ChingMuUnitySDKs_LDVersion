@@ -1,283 +1,408 @@
-﻿using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
+using AOT;
 using ChingMU;
 using UnityEngine;
 
 public class SyncHumanForLiveStream : MonoBehaviour
 {
-    // Start is called before the first frame update
-    // human
-    Vector3 humanPos = new Vector3();
-    Quaternion[] segmentRot = new Quaternion[150];
+    private const int MaximumSegmentCount = 150;
 
-    private List<int> humanID = new List<int>();
-    private List<GameObject> humanList = new List<GameObject>();
-    private List<Dictionary<int, Transform>> segmentTransformList = new List<Dictionary<int, Transform>>();
-    private List<System.Action> actionList = new List<System.Action>();
-    List<MeshRenderer> HumanMarks = new List<MeshRenderer>();
-    private GCHandle handle1;
+    private readonly Quaternion[] segmentRotations = new Quaternion[MaximumSegmentCount];
+    private readonly List<int> humanIds = new List<int>();
+    private readonly List<GameObject> humanObjects = new List<GameObject>();
+    private readonly List<Dictionary<int, Transform>> segmentTransforms = new List<Dictionary<int, Transform>>();
+    private readonly List<int> rootSegmentIds = new List<int>();
+    private readonly List<List<MeshRenderer>> humanMarkerRenderers = new List<List<MeshRenderer>>();
+    private readonly HashSet<int> reservedHumanIds = new HashSet<int>();
+    private readonly object humanSync = new object();
+    private readonly ChingMuCallbackQueue callbackQueue = new ChingMuCallbackQueue();
+
     public bool showHumanMarker;
     public Material MarkColorM;
-    //public Material JointColorM;
 
+    private CMPluginCommonInterface plugin;
+    private CMPluginAPI.callbackDelegate createHumanCallback;
+    private CMPluginAPI.callbackDelegate deleteHumanCallback;
+    private IntPtr callbackToken;
+    private bool createRegistered;
+    private bool deleteRegistered;
+    private bool previousMarkerVisibility;
+    private MaterialPropertyBlock colorProperties;
 
-    void CreateHumanCallbackFunc(System.IntPtr userdata, System.IntPtr info) //每次创建Human的时候，会回调一次这个函数，info是关于创建这个人的关键信息，类型：aHumanInfo
+    private void Start()
     {
-        GCHandle handle2 = GCHandle.FromIntPtr(userdata);
-        SyncHumanForLiveStream monitor = (SyncHumanForLiveStream)handle2.Target;
-        CMPluginAPI.aHumanInfo humanInfo = (CMPluginAPI.aHumanInfo)Marshal.PtrToStructure(info, typeof(CMPluginAPI.aHumanInfo));
-
-        if (!monitor.humanID.Contains(humanInfo.humanID))
+        plugin = CMPluginThreadManager.CMPlugin;
+        if (plugin == null || plugin.cMpluginType != CMPluginAPI.CMPluginType.LiveStream)
         {
-            monitor.actionList.Add(delegate
-            {
-                Object prefabObj = Resources.Load("Point");
-                Object fingerPrefabObj = Resources.Load("FingerPoint");
-                if (prefabObj == null || fingerPrefabObj == null)
-                {
-                    print("null prefabObj");
-                }
-
-                Queue<int> segmentQueue = new Queue<int>();
-                Queue<GameObject> sphereQueue = new Queue<GameObject>();
-                GameObject human = new GameObject(humanInfo.humanName);
-
-                Dictionary<int, Transform> tmp = new Dictionary<int, Transform>();
-                monitor.segmentTransformList.Add(tmp);
-
-                for (int i = 0; i < humanInfo.segmentNum; ++i)
-                {
-                    if (humanInfo.segmentInfo[i].parentId == -1)
-                    {
-                        segmentQueue.Enqueue(i);
-                        GameObject parentSphere = (GameObject)GameObject.Instantiate(prefabObj, new Vector3(0, 0, 0), Quaternion.identity);
-                        parentSphere.name = humanInfo.segmentInfo[i].name;
-                        parentSphere.transform.position = new Vector3(humanInfo.rootPos.x, humanInfo.rootPos.z, humanInfo.rootPos.y) / 1000f;
-                        parentSphere.transform.parent = human.transform;
-                        parentSphere.transform.GetChild(0).name = parentSphere.name + "_soildRender";
-                        //parentSphere.GetComponent<Renderer>().material.color = new Color((float)humanInfo.rgb[0] / 255, (float)humanInfo.rgb[1] / 255, (float)humanInfo.rgb[2] / 255);
-
-                        //if (monitor.showHumanMarker)
-                        //{
-                        GameObject humanMarkers = new GameObject(humanInfo.segmentInfo[i].name + "Marker");
-                        humanMarkers.transform.parent = parentSphere.transform;
-                        humanMarkers.transform.localPosition = Vector3.zero;
-                        humanMarkers.name = parentSphere.name + " marks parent";
-                        for (int j = 0; j < humanInfo.segmentInfo[i].markerNum; ++j)
-                        {
-                            GameObject humanMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                            string markerName = System.Text.Encoding.Default.GetString(humanInfo.segmentInfo[i].markerNames, 64 * j, 64);
-                            humanMarker.name = parentSphere.name + "_mark" + "_" + markerName;
-                            humanMarker.transform.parent = humanMarkers.transform;
-                            //humanMarker.transform.parent = parentSphere.transform;
-                            humanMarker.transform.localPosition = new Vector3(humanInfo.segmentInfo[i].markerPos[j].x, humanInfo.segmentInfo[i].markerPos[j].z, humanInfo.segmentInfo[i].markerPos[j].y) / 1000f;
-                            humanMarker.transform.localScale = new Vector3(0.015f, 0.015f, 0.015f);
-                            MeshRenderer markRender = humanMarker.GetComponent<MeshRenderer>();
-                            markRender.material = MarkColorM;
-                            HumanMarks.Add(markRender);
-                        }
-                        //}
-                        sphereQueue.Enqueue(parentSphere);
-                        monitor.segmentTransformList[monitor.segmentTransformList.Count - 1].Add(0, parentSphere.transform);
-
-                        break;
-                    }
-                }
-
-                while (segmentQueue.Count != 0)
-                {
-                    int segmentId = segmentQueue.Dequeue();
-                    GameObject parentSphere = sphereQueue.Dequeue();
-                    for (int i = 0; i < humanInfo.segmentNum; ++i)
-                    {
-                        if (humanInfo.segmentInfo[i].parentId == segmentId)
-                        {
-                            segmentQueue.Enqueue(i);
-                            GameObject childSphere;
-                            if (i < 23)
-                                childSphere = (GameObject)GameObject.Instantiate(prefabObj, new Vector3(0, 0, 0), Quaternion.identity);
-                            else
-                                childSphere = (GameObject)GameObject.Instantiate(fingerPrefabObj, new Vector3(0, 0, 0), Quaternion.identity);
-
-                            childSphere.name = humanInfo.segmentInfo[i].name;
-                            childSphere.transform.GetChild(0).name = childSphere.name + "_soildRender";
-                            //childSphere.GetComponent<Renderer>().material.color = new Color((float)humanInfo.rgb[0] / 255, (float)humanInfo.rgb[1] / 255, (float)humanInfo.rgb[2] / 255);
-
-                            childSphere.transform.parent = parentSphere.transform;
-                            childSphere.transform.localPosition = new Vector3(humanInfo.segmentInfo[i].posInParent.x, humanInfo.segmentInfo[i].posInParent.z, humanInfo.segmentInfo[i].posInParent.y) / 1000f;
-                            DrawLS(parentSphere, childSphere, new Color((float)humanInfo.rgb[0] / 255, (float)humanInfo.rgb[1] / 255, (float)humanInfo.rgb[2] / 255));
-
-                            //if (monitor.showHumanMarker)
-                            //{
-                            GameObject humanMarkers = new GameObject(humanInfo.segmentInfo[i].name + "Marker");
-                            humanMarkers.transform.parent = childSphere.transform;
-                            humanMarkers.transform.localPosition = Vector3.zero;
-                            humanMarkers.name = childSphere.name + " marks parent";
-                            for (int j = 0; j < humanInfo.segmentInfo[i].markerNum; ++j)
-                            {
-                                GameObject humanMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                                string markerName = System.Text.Encoding.Default.GetString(humanInfo.segmentInfo[i].markerNames, 64 * j, 64);
-                                humanMarker.name = childSphere.name + "_mark" + "_" + markerName;
-                                humanMarker.transform.parent = humanMarkers.transform;
-                                humanMarker.transform.localPosition = new Vector3(humanInfo.segmentInfo[i].markerPos[j].x, humanInfo.segmentInfo[i].markerPos[j].z, humanInfo.segmentInfo[i].markerPos[j].y) / 1000f;
-                                //humanMarker.transform.parent = humanMarkers.transform;
-                                humanMarker.transform.localScale = new Vector3(0.015f, 0.015f, 0.015f);
-                                MeshRenderer markRender = humanMarker.GetComponent<MeshRenderer>();
-                                markRender.material = MarkColorM;
-                                HumanMarks.Add(markRender);
-                            }
-                            //}
-                            sphereQueue.Enqueue(childSphere);
-                            monitor.segmentTransformList[monitor.segmentTransformList.Count - 1].Add(i, childSphere.transform);
-                        }
-                    }
-                }
-                //human.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
-                monitor.humanList.Add(human);
-                monitor.humanID.Add(humanInfo.humanID);
-                print("crate human " + humanInfo.humanID);
-                string humanMarkerName = System.Text.Encoding.Default.GetString(humanInfo.segmentInfo[0].markerNames, 0, 132);
-                print(humanMarkerName);
-            });
+            return;
         }
 
+        colorProperties = new MaterialPropertyBlock();
+        previousMarkerVisibility = !showHumanMarker;
+        callbackToken = ChingMuCallbackRegistry.Register(this);
+        createHumanCallback = OnCreateHuman;
+        deleteHumanCallback = OnDeleteHuman;
+        createRegistered = CMPluginAPI.RegisterCallback(
+            CMPluginAPI.CallbackType.CREATE_HUMAN,
+            createHumanCallback,
+            callbackToken);
+        deleteRegistered = CMPluginAPI.RegisterCallback(
+            CMPluginAPI.CallbackType.DELETE_HUMAN,
+            deleteHumanCallback,
+            callbackToken);
 
-    }
-    void DrawLS(GameObject startP, GameObject finalP, Color color)
-    {
-        Vector3 rightPosition = (startP.transform.position + finalP.transform.position) / 2;
-        Vector3 rightRotation = finalP.transform.position - startP.transform.position;
-        float HalfLength = Vector3.Distance(startP.transform.position, finalP.transform.position) / 2;
-
-        GameObject MyLine = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        MyLine.name = startP.name + "-" + finalP.name + "_segment";
-        MyLine.gameObject.transform.parent = startP.transform;
-        MyLine.transform.position = rightPosition;
-        MyLine.transform.rotation = Quaternion.FromToRotation(Vector3.up, rightRotation);
-        MyLine.transform.localScale = new Vector3(0.005f, HalfLength, 0.005f);
-        MyLine.GetComponent<Renderer>().material.color = color;
-    }
-
-    void DeleteHumanCallbackFunc(System.IntPtr userdata, System.IntPtr info)//删除huamn的时候，会回调一次这个函数，info，被删除人的id;
-    {
-        GCHandle handle2 = GCHandle.FromIntPtr(userdata);
-        SyncHumanForLiveStream monitor = (SyncHumanForLiveStream)handle2.Target;
-        int deletedHumanId = (int)Marshal.PtrToStructure(info, typeof(int));
-
-        monitor.actionList.Add(delegate
+        if (!createRegistered || !deleteRegistered)
         {
-            bool ret = false;
-
-            for (int i = 0; i < monitor.humanList.Count; ++i)
-            {
-                if (deletedHumanId == monitor.humanID[i])
-                {
-                    Destroy(monitor.humanList[i]);
-                    monitor.humanList.RemoveAt(i);
-                    monitor.humanID.RemoveAt(i);
-                    monitor.segmentTransformList.RemoveAt(i);
-                    ret = true;
-                    print("delete human id: " + deletedHumanId);
-                    break;
-                }
-            }
-            if (!ret)
-            {
-                print("delete human id not found: " + deletedHumanId);
-            }
-        }
-        );
-    }
-
-    void Start()
-    {
-        handle1 = GCHandle.Alloc(this);
-        System.IntPtr userdata = GCHandle.ToIntPtr(handle1);
- 
-        if (CMPluginThreadManager.CMPlugin != null)
-        {
-            // create human register
-            CMPluginAPI.callbackDelegate createHumanFunc = new CMPluginAPI.callbackDelegate(CreateHumanCallbackFunc);
-            bool IsRegister = CMPluginAPI.RegisterCallback(CMPluginAPI.CallbackType.CREATE_HUMAN, createHumanFunc, userdata);
-
-            // delete human register
-            CMPluginAPI.callbackDelegate deleteHumanFunc = new CMPluginAPI.callbackDelegate(DeleteHumanCallbackFunc);
-            CMPluginAPI.RegisterCallback(CMPluginAPI.CallbackType.DELETE_HUMAN, deleteHumanFunc, userdata);
+            Debug.LogWarning("One or more ChingMu human callbacks could not be registered.", this);
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    [MonoPInvokeCallback(typeof(CMPluginAPI.callbackDelegate))]
+    private static void OnCreateHuman(IntPtr userdata, IntPtr info)
     {
-        
+        SyncHumanForLiveStream target;
+        if (info == IntPtr.Zero || !ChingMuCallbackRegistry.TryGet(userdata, out target))
+        {
+            return;
+        }
+
+        CMPluginAPI.aHumanInfo humanInfo = Marshal.PtrToStructure<CMPluginAPI.aHumanInfo>(info);
+        if (target.TryReserveHuman(humanInfo.humanID))
+        {
+            target.callbackQueue.Enqueue(() => target.CreateHuman(humanInfo));
+        }
+    }
+
+    [MonoPInvokeCallback(typeof(CMPluginAPI.callbackDelegate))]
+    private static void OnDeleteHuman(IntPtr userdata, IntPtr info)
+    {
+        SyncHumanForLiveStream target;
+        if (info == IntPtr.Zero || !ChingMuCallbackRegistry.TryGet(userdata, out target))
+        {
+            return;
+        }
+
+        int humanId = Marshal.ReadInt32(info);
+        target.callbackQueue.Enqueue(() => target.DeleteHuman(humanId));
     }
 
     private void FixedUpdate()
     {
-        for (int i = 0; i < actionList.Count; ++i)
+        callbackQueue.Drain();
+        UpdateMarkerVisibility();
+        if (plugin == null)
         {
-            actionList[i]();
+            return;
         }
-        actionList.Clear();
-        foreach (MeshRenderer  v in HumanMarks) 
+
+        for (int humanIndex = 0; humanIndex < humanIds.Count; humanIndex++)
         {
-            v.enabled = showHumanMarker;
-        }
-        //CMPluginAPI.tFrame frameData = (CMPluginAPI.tFrame)Marshal.PtrToStructure(CMPluginAPI.GetFrameData(), typeof(CMPluginAPI.tFrame));
-
-        for (int k = 0; k < humanID.Count; ++k)
-        {
-
-             CMPluginThreadManager.CMPlugin.GetHumanWithoutRetargetPose(humanID[k],out humanPos,segmentRot);
-
-            segmentTransformList[k][0].position = humanPos;
-            humanPos = Vector3.zero;
-            for (int i = 0; i < segmentTransformList[k].Count; ++i)
+            Vector3 humanPosition;
+            if (!plugin.GetHumanWithoutRetargetPose(humanIds[humanIndex], out humanPosition, segmentRotations))
             {
-                segmentTransformList[k][i].localRotation = segmentRot[i];
-                segmentRot[i] = Quaternion.identity;
+                continue;
             }
-    
-        }
-        /*
-        for (int k = 0; k < humanList.Count; ++k)
-        {
-            bool flag = false;
-            if (frameData.humanData[k].isDetect == 1)
+
+            Dictionary<int, Transform> currentSegments = segmentTransforms[humanIndex];
+            Transform root;
+            if (currentSegments.TryGetValue(rootSegmentIds[humanIndex], out root))
             {
-                for (int i = 0; i < frameData.humanNum; ++i)
-                {
-                    if (frameData.humanData[i].id == humanID[k])
-                    {
-                        CMPluginAPI.HumanAttitudeLiveStream(frameData, i, out humanPos, segmentRot);
-                        flag = true;
-                        break;
-                    }
-                }
+                root.position = humanPosition;
+            }
 
-                if (!flag)
+            foreach (KeyValuePair<int, Transform> pair in currentSegments)
+            {
+                if (pair.Key >= 0 && pair.Key < segmentRotations.Length && pair.Value != null)
                 {
-                    print("invalid human id " + humanID[k]);
-                }
-                else
-                {
-                    segmentTransformList[k][0].position = humanPos;
-
-                    for (int i = 0; i < frameData.humanData[k].segementNum; ++i)
-                    {
-                        segmentTransformList[k][i].localRotation = segmentRot[i];
-                    }
+                    pair.Value.localRotation = segmentRotations[pair.Key];
                 }
             }
         }
-        */
-
     }
 
+    private bool TryReserveHuman(int humanId)
+    {
+        lock (humanSync)
+        {
+            return reservedHumanIds.Add(humanId);
+        }
+    }
+
+    private void CreateHuman(CMPluginAPI.aHumanInfo humanInfo)
+    {
+        if (humanInfo.segmentInfo == null)
+        {
+            ReleaseHumanReservation(humanInfo.humanID);
+            return;
+        }
+
+        string humanName = string.IsNullOrEmpty(humanInfo.humanName)
+            ? "Human " + humanInfo.humanID
+            : humanInfo.humanName;
+        GameObject human = new GameObject(humanName);
+        human.transform.SetParent(transform, false);
+
+        Dictionary<int, Transform> transforms = new Dictionary<int, Transform>();
+        Dictionary<int, CMPluginAPI.aSegmentInfo> segments = new Dictionary<int, CMPluginAPI.aSegmentInfo>();
+        List<MeshRenderer> markerRenderers = new List<MeshRenderer>();
+        int segmentCount = Math.Min(MaximumSegmentCount, Math.Min(Math.Max(humanInfo.segmentNum, 0), humanInfo.segmentInfo.Length));
+        int rootId = 0;
+        Color color = HumanColor(humanInfo.rgb);
+
+        for (int index = 0; index < segmentCount; index++)
+        {
+            CMPluginAPI.aSegmentInfo segment = humanInfo.segmentInfo[index];
+            int segmentId = segment.index >= 0 && segment.index < MaximumSegmentCount ? segment.index : index;
+            if (transforms.ContainsKey(segmentId))
+            {
+                continue;
+            }
+
+            GameObject joint = CreateJoint(segmentId < 23, segment.name, color);
+            joint.transform.SetParent(human.transform, false);
+            transforms.Add(segmentId, joint.transform);
+            segments.Add(segmentId, segment);
+            if (segment.parentId == -1)
+            {
+                rootId = segmentId;
+            }
+        }
+
+        foreach (KeyValuePair<int, CMPluginAPI.aSegmentInfo> pair in segments)
+        {
+            Transform current = transforms[pair.Key];
+            CMPluginAPI.aSegmentInfo segment = pair.Value;
+            Transform parent;
+            if (segment.parentId >= 0 && transforms.TryGetValue(segment.parentId, out parent))
+            {
+                current.SetParent(parent, false);
+                Vector3 nativePosition = segment.posInParent;
+                current.localPosition = new Vector3(nativePosition.x, nativePosition.z, nativePosition.y) / 1000f;
+                DrawSegment(parent, current, color);
+            }
+            else
+            {
+                current.SetParent(human.transform, false);
+            }
+
+            CreateMarkers(current, segment, markerRenderers);
+        }
+
+        humanIds.Add(humanInfo.humanID);
+        humanObjects.Add(human);
+        segmentTransforms.Add(transforms);
+        rootSegmentIds.Add(rootId);
+        humanMarkerRenderers.Add(markerRenderers);
+        previousMarkerVisibility = !showHumanMarker;
+    }
+
+    private GameObject CreateJoint(bool bodyJoint, string jointName, Color color)
+    {
+        string resourceName = bodyJoint ? "Point" : "FingerPoint";
+        GameObject prefab = Resources.Load<GameObject>(resourceName);
+        GameObject joint = prefab != null
+            ? Instantiate(prefab)
+            : GameObject.CreatePrimitive(PrimitiveType.Sphere);
+
+        joint.name = string.IsNullOrEmpty(jointName) ? "Segment" : jointName;
+        if (prefab == null)
+        {
+            joint.transform.localScale = Vector3.one * (bodyJoint ? 0.025f : 0.0125f);
+            RemoveCollider(joint);
+        }
+
+        Renderer renderer = joint.GetComponentInChildren<Renderer>();
+        ApplyColor(renderer, color);
+        return joint;
+    }
+
+    private void CreateMarkers(
+        Transform parent,
+        CMPluginAPI.aSegmentInfo segment,
+        List<MeshRenderer> renderers)
+    {
+        if (segment.markerPos == null)
+        {
+            return;
+        }
+
+        int markerCount = Math.Min(Math.Max(segment.markerNum, 0), segment.markerPos.Length);
+        for (int index = 0; index < markerCount; index++)
+        {
+            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            marker.name = parent.name + " Marker " + MarkerName(segment.markerNames, index);
+            marker.transform.SetParent(parent, false);
+            Vector3 nativePosition = segment.markerPos[index];
+            marker.transform.localPosition = new Vector3(nativePosition.x, nativePosition.z, nativePosition.y) / 1000f;
+            marker.transform.localScale = Vector3.one * 0.015f;
+            RemoveCollider(marker);
+
+            MeshRenderer renderer = marker.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                if (MarkColorM != null)
+                {
+                    renderer.sharedMaterial = MarkColorM;
+                }
+                renderers.Add(renderer);
+            }
+        }
+    }
+
+    private void DrawSegment(Transform start, Transform end, Color color)
+    {
+        Vector3 direction = end.position - start.position;
+        float length = direction.magnitude;
+        if (length <= Mathf.Epsilon)
+        {
+            return;
+        }
+
+        GameObject line = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        line.name = start.name + "-" + end.name + " Segment";
+        line.transform.position = (start.position + end.position) * 0.5f;
+        line.transform.rotation = Quaternion.FromToRotation(Vector3.up, direction);
+        line.transform.localScale = new Vector3(0.005f, length * 0.5f, 0.005f);
+        line.transform.SetParent(start, true);
+        RemoveCollider(line);
+        ApplyColor(line.GetComponent<Renderer>(), color);
+    }
+
+    private void DeleteHuman(int humanId)
+    {
+        for (int index = 0; index < humanIds.Count; index++)
+        {
+            if (humanIds[index] != humanId)
+            {
+                continue;
+            }
+
+            Destroy(humanObjects[index]);
+            humanIds.RemoveAt(index);
+            humanObjects.RemoveAt(index);
+            segmentTransforms.RemoveAt(index);
+            rootSegmentIds.RemoveAt(index);
+            humanMarkerRenderers.RemoveAt(index);
+            break;
+        }
+
+        ReleaseHumanReservation(humanId);
+    }
+
+    private void ReleaseHumanReservation(int humanId)
+    {
+        lock (humanSync)
+        {
+            reservedHumanIds.Remove(humanId);
+        }
+    }
+
+    private void UpdateMarkerVisibility()
+    {
+        if (previousMarkerVisibility == showHumanMarker)
+        {
+            return;
+        }
+
+        for (int humanIndex = 0; humanIndex < humanMarkerRenderers.Count; humanIndex++)
+        {
+            List<MeshRenderer> renderers = humanMarkerRenderers[humanIndex];
+            for (int markerIndex = 0; markerIndex < renderers.Count; markerIndex++)
+            {
+                if (renderers[markerIndex] != null)
+                {
+                    renderers[markerIndex].enabled = showHumanMarker;
+                }
+            }
+        }
+
+        previousMarkerVisibility = showHumanMarker;
+    }
+
+    private void ApplyColor(Renderer renderer, Color color)
+    {
+        if (renderer == null)
+        {
+            return;
+        }
+
+        colorProperties.SetColor("_Color", color);
+        colorProperties.SetColor("_BaseColor", color);
+        renderer.SetPropertyBlock(colorProperties);
+    }
+
+    private void RemoveCollider(GameObject target)
+    {
+        Collider collider = target.GetComponent<Collider>();
+        if (collider != null)
+        {
+            Destroy(collider);
+        }
+    }
+
+    private static Color HumanColor(int[] rgb)
+    {
+        return rgb != null && rgb.Length >= 3
+            ? new Color(rgb[0] / 255f, rgb[1] / 255f, rgb[2] / 255f)
+            : Color.white;
+    }
+
+    private static string MarkerName(byte[] markerNames, int markerIndex)
+    {
+        if (markerNames == null)
+        {
+            return markerIndex.ToString();
+        }
+
+        const int bytesPerName = 132;
+        int offset = markerIndex * bytesPerName;
+        if (offset < 0 || offset >= markerNames.Length)
+        {
+            return markerIndex.ToString();
+        }
+
+        int count = Math.Min(bytesPerName, markerNames.Length - offset);
+        string value = Encoding.UTF8.GetString(markerNames, offset, count).TrimEnd('\0');
+        return string.IsNullOrEmpty(value) ? markerIndex.ToString() : value;
+    }
 
     private void OnDestroy()
     {
-        handle1.Free();
+        UnregisterCallback(CMPluginAPI.CallbackType.CREATE_HUMAN, createHumanCallback, createRegistered);
+        UnregisterCallback(CMPluginAPI.CallbackType.DELETE_HUMAN, deleteHumanCallback, deleteRegistered);
+        ChingMuCallbackRegistry.Unregister(callbackToken);
+        callbackToken = IntPtr.Zero;
+        callbackQueue.Clear();
+
+        for (int index = 0; index < humanObjects.Count; index++)
+        {
+            if (humanObjects[index] != null)
+            {
+                Destroy(humanObjects[index]);
+            }
+        }
+    }
+
+    private void UnregisterCallback(
+        CMPluginAPI.CallbackType type,
+        CMPluginAPI.callbackDelegate callback,
+        bool registered)
+    {
+        if (!registered || callback == null)
+        {
+            return;
+        }
+
+        try
+        {
+            CMPluginAPI.UnRegisterCallback(type, callback);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning("ChingMu human callback could not be unregistered: " + exception.Message, this);
+        }
     }
 }

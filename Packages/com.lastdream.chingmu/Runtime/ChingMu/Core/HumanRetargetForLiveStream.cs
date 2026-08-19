@@ -1,130 +1,159 @@
-﻿using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using AOT;
 using ChingMU;
 using UnityEngine;
 
 public class HumanRetargetForLiveStream : MonoBehaviour
 {
+    private const int MaximumSegmentCount = 150;
+
     public int humanID;
-    List<Transform> HumanJointTrans;
-    Dictionary<string, Transform> UnityCharAllTransNodeAndNameMap;
-    List<Transform> CharAllTransNode = new List<Transform>();
-    List<Vector3> CharAllTransNodeInitLocalPos = new List<Vector3>();
-    private GCHandle handle1;
 
-    Quaternion[] rot = new Quaternion[150];
-    Vector3[] pos = new Vector3[150];
-   
-    List<System.Action> actionList = new List<System.Action>();
-    bool IsFinishedCallback = false;
+    private readonly List<Transform> humanJointTransforms = new List<Transform>();
+    private readonly Dictionary<string, Transform> transformsByName = new Dictionary<string, Transform>();
+    private readonly Transform[] transformsBySegment = new Transform[MaximumSegmentCount];
+    private readonly Quaternion[] rotations = new Quaternion[MaximumSegmentCount];
+    private readonly Vector3[] positions = new Vector3[MaximumSegmentCount];
+    private readonly ChingMuCallbackQueue callbackQueue = new ChingMuCallbackQueue();
 
-    CMPluginCommonInterface CMPlugin;
+    private CMPluginCommonInterface plugin;
+    private CMPluginAPI.callbackDelegate createHumanCallback;
+    private IntPtr callbackToken;
+    private bool callbackRegistered;
+    private bool hierarchyReady;
 
-    CMPluginAPI.callbackDelegate createHumanFunc;
-
-    void Start()
+    private void Start()
     {
-        if (CMPluginThreadManager.CMPlugin == null)
+        plugin = CMPluginThreadManager.CMPlugin;
+        if (plugin == null || plugin.cMpluginType != CMPluginAPI.CMPluginType.LiveStream)
         {
             return;
         }
 
-        handle1 = GCHandle.Alloc(this);
-        System.IntPtr userdata = GCHandle.ToIntPtr(handle1);
-        CMPlugin = CMPluginThreadManager.CMPlugin;
-
-        createHumanFunc = new CMPluginAPI.callbackDelegate(CreateHumanRetargetCallbackFunc);      
-
-        bool IsRegister = CMPluginAPI.RegisterCallback(CMPluginAPI.CallbackType.CREATE_HUMAN, createHumanFunc, userdata);
-
-        HumanJointTrans = new List<Transform>();
         GetRetargetDataMapTransHierarchy(transform);
-        UnityCharAllTransNodeAndNameMap = new Dictionary<string, Transform>();
-        foreach (Transform var in HumanJointTrans)
+        for (int index = 0; index < humanJointTransforms.Count; index++)
         {
-            CharAllTransNodeInitLocalPos.Add(Vector3.zero);
-            CharAllTransNode.Add(null);
-            UnityCharAllTransNodeAndNameMap.Add(var.gameObject.name, var);
-        }
-        
-    }
-
-    void CreateHumanRetargetCallbackFunc(System.IntPtr userdata, System.IntPtr info)
-    {
-        GCHandle handle2 = GCHandle.FromIntPtr(userdata);
-        HumanRetargetForLiveStream monitor = (HumanRetargetForLiveStream)handle2.Target;
-
-        CMPluginAPI.aHumanInfo humanInfo = (CMPluginAPI.aHumanInfo)Marshal.PtrToStructure(info, typeof(CMPluginAPI.aHumanInfo));
-        //Debug.Log("  CreateHumanRetargetCallbackFunc  xxxxxxxxx " + "name: " + humanInfo.humanName + " id: " + humanInfo.humanID + "  ScriptGameName " + monitor.name);
-        if (humanInfo.humanID == monitor.humanID)
-        {
-            monitor.actionList.Add(delegate
+            Transform current = humanJointTransforms[index];
+            if (!transformsByName.ContainsKey(current.name))
             {
-
-                for (int i = 0; i < humanInfo.segmentNum; ++i)
-                {
-                   // Debug.Log("name:" + humanInfo.segmentInfo[i].name + " id:" + humanInfo.segmentInfo[i].index + " parentId:" + humanInfo.segmentInfo[i].parentId);
-                    if (monitor.UnityCharAllTransNodeAndNameMap.ContainsKey(humanInfo.segmentInfo[i].name))
-                    {
-                        monitor.CharAllTransNode[humanInfo.segmentInfo[i].index] = monitor.UnityCharAllTransNodeAndNameMap[humanInfo.segmentInfo[i].name];
-                        //monitor.CharAllTransNode[humanInfo.segmentInfo[i].index].localPosition = new Vector3(humanInfo.segmentInfo[i].posInParent.x,
-                        //humanInfo.segmentInfo[i].posInParent.z, humanInfo.segmentInfo[i].posInParent.y) / 1000;
-                        pos[humanInfo.segmentInfo[i].index] = new Vector3(humanInfo.segmentInfo[i].posInParent.x,
-                        humanInfo.segmentInfo[i].posInParent.z, humanInfo.segmentInfo[i].posInParent.y) / 1000;
-                    }
-                }
-                monitor.IsFinishedCallback = true;
-                //Debug.Log("  CreateHumanRetargetCallbackFunc  xxxxxxxxx " + "name: "+ humanInfo.humanName+" id: "+humanInfo.humanID +"  ScriptGameName "+monitor.name);
-            });
-           
-        }
-
-    }    
-
-    void FixedUpdate()
-    {
-        for (int i = 0; i < actionList.Count; ++i)
-        {
-            actionList[i]();
-        }
-
-        actionList.Clear();
-
-        if (IsFinishedCallback) 
-        {
-
-            bool  IsDectected =CMPlugin.GetHumanWithRetargetPose(humanID, pos, rot);
-
-            if(IsDectected)
-            {
-                for (int i = 1; i < CharAllTransNode.Count; i++)
-                {
-                    if (CharAllTransNode[i] != null)
-                    {
-                        CharAllTransNode[i].localRotation = rot[i - 1];
-                        CharAllTransNode[i].localPosition = pos[i];
-                    }
-                }
-
+                transformsByName.Add(current.name, current);
             }
         }
-      
 
+        callbackToken = ChingMuCallbackRegistry.Register(this);
+        createHumanCallback = OnCreateHuman;
+        callbackRegistered = CMPluginAPI.RegisterCallback(
+            CMPluginAPI.CallbackType.CREATE_HUMAN,
+            createHumanCallback,
+            callbackToken);
+
+        if (!callbackRegistered)
+        {
+            Debug.LogWarning("ChingMu human hierarchy callback could not be registered.", this);
+        }
     }
 
-    void GetRetargetDataMapTransHierarchy(Transform CurBoneJointTrans)//第一帧深度递归获取对应骨骼节点的transform;
+    [MonoPInvokeCallback(typeof(CMPluginAPI.callbackDelegate))]
+    private static void OnCreateHuman(IntPtr userdata, IntPtr info)
     {
-
-        HumanJointTrans.Add(CurBoneJointTrans);
-        for (int i = 0; i < CurBoneJointTrans.childCount; i++)
+        HumanRetargetForLiveStream target;
+        if (info == IntPtr.Zero || !ChingMuCallbackRegistry.TryGet(userdata, out target))
         {
-            GetRetargetDataMapTransHierarchy(CurBoneJointTrans.GetChild(i));
+            return;
+        }
+
+        CMPluginAPI.aHumanInfo humanInfo = Marshal.PtrToStructure<CMPluginAPI.aHumanInfo>(info);
+        if (humanInfo.humanID == target.humanID)
+        {
+            target.callbackQueue.Enqueue(() => target.ApplyHierarchy(humanInfo));
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        callbackQueue.Drain();
+        if (!hierarchyReady || plugin == null)
+        {
+            return;
+        }
+
+        if (!plugin.GetHumanWithRetargetPose(humanID, positions, rotations))
+        {
+            return;
+        }
+
+        for (int index = 1; index < transformsBySegment.Length; index++)
+        {
+            Transform current = transformsBySegment[index];
+            if (current == null)
+            {
+                continue;
+            }
+
+            current.localRotation = rotations[index - 1];
+            current.localPosition = positions[index];
+        }
+    }
+
+    private void ApplyHierarchy(CMPluginAPI.aHumanInfo humanInfo)
+    {
+        if (humanInfo.segmentInfo == null)
+        {
+            return;
+        }
+
+        int count = Math.Min(MaximumSegmentCount, Math.Min(humanInfo.segmentNum, humanInfo.segmentInfo.Length));
+        for (int index = 0; index < count; index++)
+        {
+            CMPluginAPI.aSegmentInfo segment = humanInfo.segmentInfo[index];
+            if (segment.index < 0 || segment.index >= MaximumSegmentCount || string.IsNullOrEmpty(segment.name))
+            {
+                continue;
+            }
+
+            Transform current;
+            if (!transformsByName.TryGetValue(segment.name, out current))
+            {
+                continue;
+            }
+
+            transformsBySegment[segment.index] = current;
+            Vector3 nativePosition = segment.posInParent;
+            positions[segment.index] = new Vector3(nativePosition.x, nativePosition.z, nativePosition.y) / 1000f;
+        }
+
+        hierarchyReady = true;
+    }
+
+    private void GetRetargetDataMapTransHierarchy(Transform current)
+    {
+        humanJointTransforms.Add(current);
+        for (int index = 0; index < current.childCount; index++)
+        {
+            GetRetargetDataMapTransHierarchy(current.GetChild(index));
         }
     }
 
     private void OnDestroy()
     {
-        handle1.Free();
+        if (callbackRegistered && createHumanCallback != null)
+        {
+            try
+            {
+                CMPluginAPI.UnRegisterCallback(CMPluginAPI.CallbackType.CREATE_HUMAN, createHumanCallback);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("ChingMu human callback could not be unregistered: " + exception.Message, this);
+            }
+        }
+
+        callbackRegistered = false;
+        ChingMuCallbackRegistry.Unregister(callbackToken);
+        callbackToken = IntPtr.Zero;
+        createHumanCallback = null;
+        callbackQueue.Clear();
     }
 }

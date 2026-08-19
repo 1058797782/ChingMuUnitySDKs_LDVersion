@@ -455,65 +455,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 3108202329511879762, guid: 62c48b26485f7c640925067c6e0dc81a, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7694364626278205739, guid: 62c48b26485f7c640925067c6e0dc81a, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1872683063}
-    - targetCorrespondingSourceObject: {fileID: 7694364626278205739, guid: 62c48b26485f7c640925067c6e0dc81a, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1872683062}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 62c48b26485f7c640925067c6e0dc81a, type: 3}
---- !u!1 &1872683061 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7694364626278205739, guid: 62c48b26485f7c640925067c6e0dc81a, type: 3}
-  m_PrefabInstance: {fileID: 1859680114}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1872683062
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1872683061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c2d9aa2ca61d6433f9f37ade3ecbb232, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UVRPN::UVRPN.Core.VRPN_Tracker
-  host: {fileID: 1872683063}
-  tracker: Banzi
-  channel: 0
-  trackPosition: 1
-  localPosition: 1
-  invertPos:
-    x: 0
-    y: 0
-    z: 0
-  scale: 1
-  trackRotation: 1
-  localRotation: 1
-  invertRot:
-    x: 0
-    y: 0
-    z: 0
-  initiallyConnected: 0
---- !u!114 &1872683063
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1872683061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1eac9395efdfd4470af0d0607aef1b8f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UVRPN::UVRPN.Core.VRPN_Manager
-  hostname: 127.0.0.1
 --- !u!1001 &2075364170
 PrefabInstance:
   m_ObjectHideFlags: 0

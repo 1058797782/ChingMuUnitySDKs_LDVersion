@@ -7,6 +7,33 @@ public static class CMVrpn
 {
     private const uint ENGINE_UNITY = 1;
 
+    [ThreadStatic]
+    private static ScratchBuffers threadBuffers;
+
+    private sealed class ScratchBuffers
+    {
+        internal readonly double[] DeviceRotation = new double[4];
+        internal readonly double[] DevicePosition = new double[3];
+        internal readonly double[] HumanAttitude = new double[95];
+        internal readonly int[] HumanDetected = new int[23];
+        internal readonly double[] RetargetPosition = new double[450];
+        internal readonly double[] RetargetRotation = new double[600];
+        internal readonly int[] RetargetDetected = new int[150];
+        internal readonly double[] OutputRotation = new double[4];
+        internal readonly double[] OutputPosition = new double[3];
+    }
+
+    private static ScratchBuffers Buffers
+    {
+        get { return threadBuffers ?? (threadBuffers = new ScratchBuffers()); }
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetScratchBuffers()
+    {
+        threadBuffers = null;
+    }
+
     [DllImport("CMVrpn")]
     private static extern void CMVrpnStartExtern();
 
@@ -73,7 +100,6 @@ public static class CMVrpn
     [DllImport("CMVrpn", CallingConvention = CallingConvention.StdCall)]
     public static extern bool CMPluginRegisterHumanMap(string address, IntPtr CallBackFun_agrs, UpdateHumanMapCallback CallBackHumanMap);
 
-    private static bool IsCMTrackThreadRuning = false;
     /// <summary>
     /// VR设备的姿态
     /// </summary>
@@ -206,9 +232,8 @@ public static class CMVrpn
     /// <returns></returns>
     public static Vector3 CMPosWithImu(string address, int channel, DevicePose oculusRT)//OVRPose oculusRT
     {
-
-        double[] oculusQuat = new double[4];
-        double[] oculusPos = new double[3];
+        double[] oculusQuat = Buffers.DeviceRotation;
+        double[] oculusPos = Buffers.DevicePosition;
         oculusQuat[0] = oculusRT.orientation.x;
         oculusQuat[1] = oculusRT.orientation.y;
         oculusQuat[2] = oculusRT.orientation.z;
@@ -234,9 +259,8 @@ public static class CMVrpn
     /// <returns>Quaternion of that merge tracker quaternion and quaternion of IMU</returns>
     public static Quaternion CMQuatWithImu(string address, int channel, DevicePose oculusRT)
     {
-
-        double[] oculusQuat = new double[4];
-        double[] oculusPos = new double[3];
+        double[] oculusQuat = Buffers.DeviceRotation;
+        double[] oculusPos = Buffers.DevicePosition;
         oculusQuat[0] = oculusRT.orientation.x;
         oculusQuat[1] = oculusRT.orientation.y;
         oculusQuat[2] = oculusRT.orientation.z;
@@ -262,9 +286,8 @@ public static class CMVrpn
     /// <returns></returns>
     public static Vector3 CMPosOfTouch(string address, int channel, Quaternion touchRT)
     {
-
-        double[] oculusQuat = new double[4];
-        double[] oculusPos = new double[3];
+        double[] oculusQuat = Buffers.DeviceRotation;
+        double[] oculusPos = Buffers.DevicePosition;
         oculusQuat[0] = touchRT.x;
         oculusQuat[1] = touchRT.y;
         oculusQuat[2] = touchRT.z;
@@ -290,9 +313,8 @@ public static class CMVrpn
     /// <returns>Quaternion of that merge tracker quaternion and quaternion of IMU</returns>
     public static Quaternion CMQuatOfTouch(string address, int channel, Quaternion touchRT)
     {
-
-        double[] oculusQuat = new double[4];
-        double[] oculusPos = new double[3];
+        double[] oculusQuat = Buffers.DeviceRotation;
+        double[] oculusPos = Buffers.DevicePosition;
         oculusQuat[0] = touchRT.x;
         oculusQuat[1] = touchRT.y;
         oculusQuat[2] = touchRT.z;
@@ -323,8 +345,14 @@ public static class CMVrpn
     {
 
 
-        double[] attitude = new double[95];
-        int[] _isDetected = new int[23];
+        if (rot == null || segmentIsDetected == null || rot.Length < 23 || segmentIsDetected.Length < 23)
+        {
+            pos = Vector3.zero;
+            return false;
+        }
+
+        double[] attitude = Buffers.HumanAttitude;
+        int[] _isDetected = Buffers.HumanDetected;
         bool isDetected = CMHumanExtern(address, channel, Time.frameCount, attitude, _isDetected);
         pos = new Vector3((float)attitude[0], (float)attitude[2], (float)attitude[1]) / 1000f;
         for (int i = 0; i < 23; i++)
@@ -347,15 +375,15 @@ public static class CMVrpn
     public static bool CMRetargetHuman(string address, int channel, [In, Out] Vector3[] pos, [In, Out] Quaternion[] boneRot, [In, Out] bool[] segmentIsDetected)
     {
         int vrpntimecode = 0;
-        double[] bonePosition = new double[3 * 150];//150
-        double[] boneAttitude = new double[4 * 150];//150
-        int[] isBoneDetected = new int[150];//150
-        if (pos == null || boneRot == null)
+        double[] bonePosition = Buffers.RetargetPosition;
+        double[] boneAttitude = Buffers.RetargetRotation;
+        int[] isBoneDetected = Buffers.RetargetDetected;
+        if (pos == null || boneRot == null || segmentIsDetected == null)
             return false;
 
 
         int segmentNum = address.Contains(":3883") ? 150 : 23;//150
-        //   Debug.Log("   "+ segmentNum);
+        segmentNum = Math.Min(segmentNum, Math.Min(pos.Length, Math.Min(boneRot.Length, segmentIsDetected.Length)));
         bool isHumanDetected = CMRetargetHumanExternTC(address, channel, Time.frameCount, ref vrpntimecode, bonePosition, boneAttitude, isBoneDetected);
         if (isHumanDetected)
         {
@@ -373,7 +401,6 @@ public static class CMVrpn
 
                     //Maya Skeleton
                     boneRot[i] = new Quaternion((float)boneAttitude[i * 4 + 0], (float)boneAttitude[i * 4 + 2], (float)boneAttitude[i * 4 + 1], -(float)boneAttitude[i * 4 + 3]);
-                    //  Debug.Log(pos[i] + "  " + boneRot[i]);
                     segmentIsDetected[i] = true;
                 }
                 else
@@ -399,14 +426,14 @@ public static class CMVrpn
     /// <returns>the body of head is detected or not </returns>
     public static bool CMHumanHead(string address, int channel, DevicePose oculusRT, out Quaternion rot, out Vector3 pos)
     {
-        double[] oculusQuat = new double[4];
+        double[] oculusQuat = Buffers.DeviceRotation;
         oculusQuat[0] = oculusRT.orientation.x;
         oculusQuat[1] = oculusRT.orientation.y;
         oculusQuat[2] = oculusRT.orientation.z;
         oculusQuat[3] = oculusRT.orientation.w;
 
-        double[] _rot = new double[4];
-        double[] _pos = new double[3];
+        double[] _rot = Buffers.OutputRotation;
+        double[] _pos = Buffers.OutputPosition;
 
         bool isDetected = CMHumanHeadExtern(address, channel, Time.frameCount, oculusQuat, _rot, _pos, ENGINE_UNITY);
         rot = new Quaternion((float)_rot[0], (float)_rot[2], (float)_rot[1], -(float)_rot[3]);
