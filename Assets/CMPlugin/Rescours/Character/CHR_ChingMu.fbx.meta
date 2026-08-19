@@ -1,0 +1,852 @@
+fileFormatVersion: 2
+guid: 6b2a924f1cb36494fbeb19f3b06b2b9b
+ModelImporter:
+  serializedVersion: 22200
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: kuzi
+    second: {fileID: 2100000, guid: 2a785b36955bdc246abe725fb53e7d0d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lian
+    second: {fileID: 2100000, guid: 3a0104b474d1f9c499eb0d2820d574b7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: shangyi
+    second: {fileID: 2100000, guid: 240894777dc1efe49a431de0f1afba61, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: shenti
+    second: {fileID: 2100000, guid: 99d746b92a961bc4189b22253edf27c8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: toufa
+    second: {fileID: 2100000, guid: d1bbd725929e22146a4fedc123a7d8d0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: xiezi
+    second: {fileID: 2100000, guid: a375afb669bf33343848aef536d2fe6e, type: 2}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton:
+    - name: CHR_ChingMu(Clone)
+      parentName: 
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: xiaoqing
+      parentName: CHR_ChingMu(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: face
+      parentName: xiaoqing
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071068}
+      scale: {x: 100, y: 100, z: 100}
+    - name: hair
+      parentName: xiaoqing
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: body
+      parentName: xiaoqing
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: yifu
+      parentName: xiaoqing
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: yifu01
+      parentName: yifu
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: yifu02
+      parentName: yifu
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: yifu03
+      parentName: yifu
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Face_BS_Grp
+      parentName: CHR_ChingMu(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: Root
+      parentName: CHR_ChingMu(Clone)
+      position: {x: -0, y: 0, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_Hips
+      parentName: Root
+      position: {x: 0.00027633205, y: 0.91838026, z: 0.0057988516}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_Spine
+      parentName: ChingMu_Hips
+      position: {x: 0.00000001154872, y: 0.052913617, z: 0.009824744}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_Spine1
+      parentName: ChingMu_Spine
+      position: {x: 0.00000003253515, y: 0.1139877, z: 0.014169316}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_Spine2
+      parentName: ChingMu_Spine1
+      position: {x: 0.000000059786636, y: 0.124103, z: -0.013643028}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: J_Sec_L_Bust1
+      parentName: ChingMu_Spine2
+      position: {x: -0.053292498, y: -0.027212529, z: 0.0590706}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: J_Sec_L_Bust2
+      parentName: J_Sec_L_Bust1
+      position: {x: -0.026826844, y: 0.005870249, z: 0.053579465}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: J_Sec_R_Bust1
+      parentName: ChingMu_Spine2
+      position: {x: 0.05329244, y: -0.027212698, z: 0.059070595}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: J_Sec_R_Bust2
+      parentName: J_Sec_R_Bust1
+      position: {x: 0.026826922, y: 0.005870125, z: 0.053579435}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_Neck
+      parentName: ChingMu_Spine2
+      position: {x: 0.000000058955074, y: 0.114615075, z: -0.033395622}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_Head
+      parentName: ChingMu_Neck
+      position: {x: 0.0000000043643893, y: 0.07220929, z: 0.009306943}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_P_01
+      parentName: ChingMu_Head
+      position: {x: -0.014790654, y: 0.038121086, z: -0.0819446}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_P_02
+      parentName: HairJoint_P_01
+      position: {x: 0.0014568387, y: -0.08112563, z: 0.020816991}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_P_03
+      parentName: HairJoint_P_02
+      position: {x: 0.00094146415, y: -0.083595216, z: -0.013079771}
+      rotation: {x: -6.938894e-18, y: -4.440892e-16, z: -3.081488e-33, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_P_04
+      parentName: HairJoint_P_03
+      position: {x: -0.0035065664, y: -0.07546559, z: -0.055325076}
+      rotation: {x: -3.469447e-18, y: -4.440892e-16, z: -1.540744e-33, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_P_05
+      parentName: HairJoint_P_04
+      position: {x: 0.003593175, y: -0.06672624, z: -0.04209198}
+      rotation: {x: -6.938894e-18, y: -1.800184e-15, z: -1.4095494e-14, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_P_06
+      parentName: HairJoint_P_05
+      position: {x: -0.0049369303, y: -0.067005016, z: -0.0071263304}
+      rotation: {x: -6.938894e-18, y: -1.6512972e-15, z: -6.6288286e-15, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_P_07
+      parentName: HairJoint_P_06
+      position: {x: -0.014013517, y: -0.078326106, z: 0.023504209}
+      rotation: {x: -1.3877788e-17, y: -3.878507e-15, z: -1.8775271e-14, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_P_08
+      parentName: HairJoint_P_07
+      position: {x: -0.0148339225, y: -0.07707917, z: -0.019166565}
+      rotation: {x: -5.551115e-17, y: -4.8853625e-15, z: -1.7659414e-14, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_P_09
+      parentName: HairJoint_P_08
+      position: {x: 0.00201955, y: -0.06257762, z: -0.02501928}
+      rotation: {x: -5.551115e-17, y: -4.9468693e-15, z: -1.9080859e-14, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: J_Adj_L_FaceEye
+      parentName: ChingMu_Head
+      position: {x: -0.017881423, y: 0.066734456, z: 0.02912341}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: J_Adj_R_FaceEye
+      parentName: ChingMu_Head
+      position: {x: 0.0178814, y: 0.06673449, z: 0.02912342}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_A_01
+      parentName: ChingMu_Head
+      position: {x: 0.01872874, y: 0.041920885, z: -0.09977406}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_A_02
+      parentName: HairJoint_A_01
+      position: {x: -0.0068168915, y: -0.048216708, z: 0.013791443}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_A_03
+      parentName: HairJoint_A_02
+      position: {x: -0.005860144, y: -0.042380214, z: 0.012407733}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_B_01
+      parentName: ChingMu_Head
+      position: {x: 0.10141477, y: 0.08876983, z: 0.052065823}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_B_02
+      parentName: HairJoint_B_01
+      position: {x: -0.00093219866, y: -0.040213566, z: -0.004581472}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_B_03
+      parentName: HairJoint_B_02
+      position: {x: -0.0011892573, y: -0.040251598, z: -0.0043432936}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_C_01
+      parentName: ChingMu_Head
+      position: {x: -0.08812591, y: 0.02675175, z: 0.008913881}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_C_02
+      parentName: HairJoint_C_01
+      position: {x: 0.022404442, y: -0.037000246, z: -0.0069002933}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_C_03
+      parentName: HairJoint_C_02
+      position: {x: 0.017484628, y: -0.028653037, z: -0.0056073633}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_D_01
+      parentName: ChingMu_Head
+      position: {x: 0.10316006, y: 0.058278184, z: -0.0049255043}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_D_02
+      parentName: HairJoint_D_01
+      position: {x: -0.029724823, y: -0.052181084, z: -0.009203417}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_D_03
+      parentName: HairJoint_D_02
+      position: {x: -0.029471967, y: -0.05231533, z: -0.009307468}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_E_01
+      parentName: ChingMu_Head
+      position: {x: -0.10386562, y: 0.07353244, z: 0.044297688}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_E_02
+      parentName: HairJoint_E_01
+      position: {x: 0.0027022408, y: -0.032957587, z: -0.004534941}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_E_03
+      parentName: HairJoint_E_02
+      position: {x: 0.0024104714, y: -0.034602106, z: -0.004524689}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_F_01
+      parentName: ChingMu_Head
+      position: {x: -0.07111716, y: 0.020145535, z: -0.045837797}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_F_02
+      parentName: HairJoint_F_01
+      position: {x: 0.017433736, y: -0.03384858, z: 0.0034413338}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_F_03
+      parentName: HairJoint_F_02
+      position: {x: 0.01277039, y: -0.02794334, z: 0.0027390653}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_G_01
+      parentName: ChingMu_Head
+      position: {x: 0.0065212683, y: 0.21992469, z: 0.052104924}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_G_02
+      parentName: HairJoint_G_01
+      position: {x: 0.039088454, y: 0.01920842, z: -0.022178045}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_G_03
+      parentName: HairJoint_G_02
+      position: {x: 0.045814455, y: -0.019748095, z: -0.0063023996}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_G_04
+      parentName: HairJoint_G_03
+      position: {x: 0.018276514, y: -0.04054368, z: 0.0206912}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_H_01
+      parentName: ChingMu_Head
+      position: {x: -0.04272087, y: 0.026634954, z: -0.084440365}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_H_02
+      parentName: HairJoint_H_01
+      position: {x: 0.010220101, y: -0.036168512, z: 0.008896443}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_H_03
+      parentName: HairJoint_H_02
+      position: {x: 0.009308692, y: -0.031888288, z: 0.0077283694}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_I_01
+      parentName: ChingMu_Head
+      position: {x: 0.09298049, y: 0.06377333, z: 0.03880911}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_I_02
+      parentName: HairJoint_I_01
+      position: {x: 0.0007126218, y: -0.06343896, z: 0.008415731}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_I_03
+      parentName: HairJoint_I_02
+      position: {x: -0.012929458, y: -0.06144413, z: 0.014210229}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_I_04
+      parentName: HairJoint_I_03
+      position: {x: -0.012964471, y: -0.061435774, z: 0.014224647}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_J_01
+      parentName: ChingMu_Head
+      position: {x: 0.009382885, y: 0.14177793, z: 0.112339586}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_J_02
+      parentName: HairJoint_J_01
+      position: {x: -0.010878328, y: -0.04616446, z: -0.0018627654}
+      rotation: {x: 0.04997241, y: 0, z: -0, w: 0.9987506}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_J_03
+      parentName: HairJoint_J_02
+      position: {x: -0.012953392, y: -0.04905398, z: -0.0080572}
+      rotation: {x: 2.0816682e-17, y: 0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_K_01
+      parentName: ChingMu_Head
+      position: {x: 0.062973514, y: 0.020123731, z: -0.06009971}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_K_02
+      parentName: HairJoint_K_01
+      position: {x: -0.01603691, y: -0.034359504, z: 0.0027586552}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_K_03
+      parentName: HairJoint_K_02
+      position: {x: -0.014131864, y: -0.030683272, z: 0.0023677344}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_L_01
+      parentName: ChingMu_Head
+      position: {x: -0.06624522, y: 0.12906127, z: 0.08925833}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_L_02
+      parentName: HairJoint_L_01
+      position: {x: -0.003706559, y: -0.043686084, z: -0.009578096}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_L_03
+      parentName: HairJoint_L_02
+      position: {x: -0.0038975927, y: -0.040298726, z: -0.008291745}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_M_01
+      parentName: ChingMu_Head
+      position: {x: 0.052323096, y: 0.14701703, z: 0.09509013}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_M_02
+      parentName: HairJoint_M_01
+      position: {x: 0.0007356502, y: -0.038827877, z: 0}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_M_03
+      parentName: HairJoint_M_02
+      position: {x: 0.0005785984, y: -0.04010034, z: -0.0015353697}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_N_01
+      parentName: ChingMu_Head
+      position: {x: -0.0075188335, y: 0.038121086, z: -0.0819446}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_N_02
+      parentName: HairJoint_N_01
+      position: {x: 0.01271951, y: -0.08112563, z: 0.01794219}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_N_03
+      parentName: HairJoint_N_02
+      position: {x: 0.0052801115, y: -0.083595216, z: -0.013079771}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_N_04
+      parentName: HairJoint_N_03
+      position: {x: 0.0039975597, y: -0.07546559, z: -0.03774979}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_N_05
+      parentName: HairJoint_N_04
+      position: {x: 0.0013334801, y: -0.06672624, z: -0.052550796}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_N_06
+      parentName: HairJoint_N_05
+      position: {x: -0.0065502464, y: -0.067005016, z: -0.051625013}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_N_07
+      parentName: HairJoint_N_06
+      position: {x: -0.017917601, y: -0.078326106, z: 0.0069516455}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_N_08
+      parentName: HairJoint_N_07
+      position: {x: -0.016895305, y: -0.07707917, z: 0.026938252}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_N_09
+      parentName: HairJoint_N_08
+      position: {x: 0.007166539, y: -0.072783165, z: -0.041951455}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_O_01
+      parentName: ChingMu_Head
+      position: {x: -0.001990983, y: 0.1361616, z: 0.11895228}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_O_02
+      parentName: HairJoint_O_01
+      position: {x: 0.0104687335, y: -0.05355529, z: -0.00016043682}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: HairJoint_O_03
+      parentName: HairJoint_O_02
+      position: {x: 0.013257938, y: -0.041266065, z: -0.016825398}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftShoulder
+      parentName: ChingMu_Spine2
+      position: {x: -0.022385592, y: 0.087263785, z: -0.027442772}
+      rotation: {x: 0, y: 0, z: -0.043619387, w: 0.99904823}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftArm
+      parentName: ChingMu_LeftShoulder
+      position: {x: -0.114050575, y: -0.024673432, z: 0.0052808747}
+      rotation: {x: 0, y: 0, z: 0.043619387, w: 0.99904823}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftForeArm
+      parentName: ChingMu_LeftArm
+      position: {x: -0.1882014, y: -0.010197781, z: 0.001837319}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHand
+      parentName: ChingMu_LeftForeArm
+      position: {x: -0.21357404, y: -0.00046589138, z: 0.017629774}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandIndex1
+      parentName: ChingMu_LeftHand
+      position: {x: -0.063906305, y: 0.0055838637, z: 0.021438379}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandIndex2
+      parentName: ChingMu_LeftHandIndex1
+      position: {x: -0.03282185, y: -0.00013757158, z: 0.0051433803}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandIndex3
+      parentName: ChingMu_LeftHandIndex2
+      position: {x: -0.02031594, y: -0.0006797335, z: 0.0022878263}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandIndex4
+      parentName: ChingMu_LeftHandIndex3
+      position: {x: -0.02411345, y: -0.00091731874, z: 0.0022140313}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandPinky1
+      parentName: ChingMu_LeftHand
+      position: {x: -0.06326293, y: 0.0031956625, z: -0.026806569}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandPinky2
+      parentName: ChingMu_LeftHandPinky1
+      position: {x: -0.031398155, y: -0.00027048946, z: 0.000021621892}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandPinky3
+      parentName: ChingMu_LeftHandPinky2
+      position: {x: -0.018059582, y: 0.00068593305, z: -0.0009492554}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandPinky4
+      parentName: ChingMu_LeftHandPinky3
+      position: {x: -0.01936393, y: 0.0011278284, z: -0.0005341586}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandMiddle1
+      parentName: ChingMu_LeftHand
+      position: {x: -0.0661133, y: 0.008438733, z: 0.0047675776}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandMiddle2
+      parentName: ChingMu_LeftHandMiddle1
+      position: {x: -0.036900487, y: -0.0013566107, z: 0.0024393988}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandMiddle3
+      parentName: ChingMu_LeftHandMiddle2
+      position: {x: -0.022683194, y: -0.002421382, z: 0.00093298923}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandMiddle4
+      parentName: ChingMu_LeftHandMiddle3
+      position: {x: -0.024962157, y: -0.0016238572, z: 0.0008548558}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandRing1
+      parentName: ChingMu_LeftHand
+      position: {x: -0.066682674, y: 0.008393705, z: -0.01097737}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandRing2
+      parentName: ChingMu_LeftHandRing1
+      position: {x: -0.034322888, y: -0.0005366848, z: 0.00017223487}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandRing3
+      parentName: ChingMu_LeftHandRing2
+      position: {x: -0.0197968, y: 0.00071024883, z: 0.0002525049}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandRing4
+      parentName: ChingMu_LeftHandRing3
+      position: {x: -0.021352243, y: 0.00033914912, z: -0.00013687043}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandThumb1
+      parentName: ChingMu_LeftHand
+      position: {x: -0.002030136, y: -0.0069871363, z: 0.017747967}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandThumb2
+      parentName: ChingMu_LeftHandThumb1
+      position: {x: -0.032237045, y: -0.0027513462, z: 0.03350457}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandThumb3
+      parentName: ChingMu_LeftHandThumb2
+      position: {x: -0.021300638, y: -0.0015413702, z: 0.019083738}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftHandThumb4
+      parentName: ChingMu_LeftHandThumb3
+      position: {x: -0.014960074, y: -0.0008293377, z: 0.015667208}
+      rotation: {x: 0, y: 0, z: -6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightShoulder
+      parentName: ChingMu_Spine2
+      position: {x: 0.022385685, y: 0.08726376, z: -0.02744276}
+      rotation: {x: 0, y: 0, z: 0.043619387, w: 0.99904823}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightArm
+      parentName: ChingMu_RightShoulder
+      position: {x: 0.11405356, y: -0.024673589, z: 0.0052808193}
+      rotation: {x: 0, y: -0, z: -0.043619387, w: 0.99904823}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightForeArm
+      parentName: ChingMu_RightArm
+      position: {x: 0.18819815, y: -0.010197179, z: 0.0018370817}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHand
+      parentName: ChingMu_RightForeArm
+      position: {x: 0.21357404, y: -0.0004649257, z: 0.017629242}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandIndex1
+      parentName: ChingMu_RightHand
+      position: {x: 0.06390623, y: 0.0055840206, z: 0.021438202}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandIndex2
+      parentName: ChingMu_RightHandIndex1
+      position: {x: 0.032821763, y: -0.00013721225, z: 0.005143593}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandIndex3
+      parentName: ChingMu_RightHandIndex2
+      position: {x: 0.020316346, y: -0.0006796163, z: 0.0022880482}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandIndex4
+      parentName: ChingMu_RightHandIndex3
+      position: {x: 0.024113497, y: -0.00091756514, z: 0.0022142138}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandPinky1
+      parentName: ChingMu_RightHand
+      position: {x: 0.06326282, y: 0.0031956309, z: -0.026806759}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandPinky2
+      parentName: ChingMu_RightHandPinky1
+      position: {x: 0.031397987, y: -0.00026965185, z: 0.000022222015}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandPinky3
+      parentName: ChingMu_RightHandPinky2
+      position: {x: 0.018059418, y: 0.00068616297, z: -0.0009489161}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandPinky4
+      parentName: ChingMu_RightHandPinky3
+      position: {x: 0.019364148, y: 0.0011285594, z: -0.0005337179}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandMiddle1
+      parentName: ChingMu_RightHand
+      position: {x: 0.06611323, y: 0.008438774, z: 0.0047673867}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandMiddle2
+      parentName: ChingMu_RightHandMiddle1
+      position: {x: 0.036900435, y: -0.0013564865, z: 0.0024393268}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandMiddle3
+      parentName: ChingMu_RightHandMiddle2
+      position: {x: 0.022683272, y: -0.0024211435, z: 0.0009329562}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandMiddle4
+      parentName: ChingMu_RightHandMiddle3
+      position: {x: 0.024962237, y: -0.0016235119, z: 0.00085479795}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandRing1
+      parentName: ChingMu_RightHand
+      position: {x: 0.066682816, y: 0.008393624, z: -0.010977591}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandRing2
+      parentName: ChingMu_RightHandRing1
+      position: {x: 0.034322765, y: -0.00053680077, z: 0.00017233177}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandRing3
+      parentName: ChingMu_RightHandRing2
+      position: {x: 0.01979686, y: 0.0007103695, z: 0.00025260652}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandRing4
+      parentName: ChingMu_RightHandRing3
+      position: {x: 0.021351947, y: 0.00033926766, z: -0.00013681906}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandThumb1
+      parentName: ChingMu_RightHand
+      position: {x: 0.002030547, y: -0.0069874506, z: 0.017747933}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandThumb2
+      parentName: ChingMu_RightHandThumb1
+      position: {x: 0.032227207, y: -0.0027285845, z: 0.03351601}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandThumb3
+      parentName: ChingMu_RightHandThumb2
+      position: {x: 0.021296134, y: -0.0015280232, z: 0.01908955}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightHandThumb4
+      parentName: ChingMu_RightHandThumb3
+      position: {x: 0.014957775, y: -0.0008190891, z: 0.01566992}
+      rotation: {x: 0, y: 0, z: 6.938894e-18, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftUpLeg
+      parentName: ChingMu_Hips
+      position: {x: -0.07712238, y: -0.039953962, z: -0.0035011892}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftLeg
+      parentName: ChingMu_LeftUpLeg
+      position: {x: 0.020264741, y: -0.3521897, z: -0.0063254246}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftFoot
+      parentName: ChingMu_LeftLeg
+      position: {x: 0.010351211, y: -0.41464323, z: -0.021174056}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_LeftToeBase
+      parentName: ChingMu_LeftFoot
+      position: {x: -0.0014662823, y: -0.06336487, z: 0.11059764}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: J_Bip_L_ToeBase_end
+      parentName: ChingMu_LeftToeBase
+      position: {x: -0.00040835922, y: -0.0020154947, z: 0.045187302}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightUpLeg
+      parentName: ChingMu_Hips
+      position: {x: 0.0771224, y: -0.03995397, z: -0.0035011764}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightLeg
+      parentName: ChingMu_RightUpLeg
+      position: {x: -0.020265456, y: -0.35219008, z: -0.006325341}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightFoot
+      parentName: ChingMu_RightLeg
+      position: {x: -0.010352433, y: -0.4146433, z: -0.021174418}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ChingMu_RightToeBase
+      parentName: ChingMu_RightFoot
+      position: {x: 0.0014656519, y: -0.06336495, z: 0.11059776}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: J_Bip_R_ToeBase_end
+      parentName: ChingMu_RightToeBase
+      position: {x: 0.00040803023, y: -0.0020157343, z: 0.04518729}
+      rotation: {x: 0, y: -0, z: -0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 1
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 1
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

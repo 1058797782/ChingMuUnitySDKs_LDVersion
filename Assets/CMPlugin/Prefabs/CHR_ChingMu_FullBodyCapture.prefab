@@ -1,0 +1,158 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &8969038940760341319
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      propertyPath: m_Name
+      value: CHR_ChingMu_FullBodyCapture
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6663170929905163683}
+  m_SourcePrefab: {fileID: 100100000, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b, type: 3}
+--- !u!1 &8122528575902926358 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 6b2a924f1cb36494fbeb19f3b06b2b9b,
+    type: 3}
+  m_PrefabInstance: {fileID: 8969038940760341319}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6663170929905163683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8122528575902926358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 810bacc7165e3b1449f5357172f3684c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  HumanID: 0
+  HumanBones:
+    Hips: {fileID: 0}
+    Spine1: {fileID: 0}
+    Spine2: {fileID: 0}
+    Spine3: {fileID: 0}
+    Spine4: {fileID: 0}
+    Neck: {fileID: 0}
+    Head: {fileID: 0}
+    LeftShoulder: {fileID: 0}
+    LeftArm: {fileID: 0}
+    LeftForeArm: {fileID: 0}
+    LeftHand: {fileID: 0}
+    RightShoulder: {fileID: 0}
+    RightArm: {fileID: 0}
+    RightForeArm: {fileID: 0}
+    RightHand: {fileID: 0}
+    LeftUpleg: {fileID: 0}
+    LeftLeg: {fileID: 0}
+    LeftFoot: {fileID: 0}
+    LeftToeBase: {fileID: 0}
+    RightUpLeg: {fileID: 0}
+    RightLeg: {fileID: 0}
+    RightFoot: {fileID: 0}
+    RightToeBase: {fileID: 0}
+    LeftHandThumb1: {fileID: 0}
+    LeftHandThumb2: {fileID: 0}
+    LeftHandThumb3: {fileID: 0}
+    LeftHandThumb4: {fileID: 0}
+    LeftHandIndex1: {fileID: 0}
+    LeftHandIndex2: {fileID: 0}
+    LeftHandIndex3: {fileID: 0}
+    LeftHandIndex4: {fileID: 0}
+    LeftHandMiddle1: {fileID: 0}
+    LeftHandMiddle2: {fileID: 0}
+    LeftHandMiddle3: {fileID: 0}
+    LeftHandMiddle4: {fileID: 0}
+    LeftHandRing1: {fileID: 0}
+    LeftHandRing2: {fileID: 0}
+    LeftHandRing3: {fileID: 0}
+    LeftHandRing4: {fileID: 0}
+    LeftHandPinky1: {fileID: 0}
+    LeftHandPinky2: {fileID: 0}
+    LeftHandPinky3: {fileID: 0}
+    LeftHandPinky4: {fileID: 0}
+    RightHandThumb1: {fileID: 0}
+    RightHandThumb2: {fileID: 0}
+    RightHandThumb3: {fileID: 0}
+    RightHandThumb4: {fileID: 0}
+    RightHandIndex1: {fileID: 0}
+    RightHandIndex2: {fileID: 0}
+    RightHandIndex3: {fileID: 0}
+    RightHandIndex4: {fileID: 0}
+    RightHandMiddle1: {fileID: 0}
+    RightHandMiddle2: {fileID: 0}
+    RightHandMiddle3: {fileID: 0}
+    RightHandMiddle4: {fileID: 0}
+    RightHandRing1: {fileID: 0}
+    RightHandRing2: {fileID: 0}
+    RightHandRing3: {fileID: 0}
+    RightHandRing4: {fileID: 0}
+    RightHandPinky1: {fileID: 0}
+    RightHandPinky2: {fileID: 0}
+    RightHandPinky3: {fileID: 0}
+    RightHandPinky4: {fileID: 0}
+  ServerID: 
